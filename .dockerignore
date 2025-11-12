@@ -1,0 +1,44 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+docs/
+
+# Dependencies
+vendor/
+
+# Build artifacts
+build/
+dist/
+*.exe
+onb
+coverage.out
+coverage.html
+
+# Development files
+.tmp/
+tmp/
+*.log
+.air.toml
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+*_test.go
+testdata/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml

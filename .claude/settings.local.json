@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(knot get-started:*)",
+      "Bash(knot project create:*)",
+      "Bash(knot project select:*)",
+      "Bash(knot project get-selected:*)",
+      "Bash(knot task create:*)",
+      "Bash(knot dependency add:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(knot task update:*)",
+      "Bash(knot task --help:*)",
+      "Bash(knot task update-description:*)",
+      "Bash(knot:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
