@@ -2,6 +2,7 @@ package di
 
 import (
 	"github.com/denkhaus/open-notebook-cli/pkg/config"
+	"github.com/denkhaus/open-notebook-cli/pkg/services"
 	"github.com/samber/do/v2"
 	"github.com/urfave/cli/v2"
 )
@@ -13,26 +14,44 @@ func Bootstrap(cliCtx *cli.Context) do.Injector {
 	// Inject CLI context for configuration service and other CLI-dependent services
 	do.ProvideValue(injector, cliCtx)
 
-	// Provide configuration service (depends on CLI context)
-	do.Provide[config.Service](injector, config.NewConfig)
+	// Core infrastructure services
+	do.Provide(injector, config.NewConfig)
+	do.Provide(injector, services.NewLogger)
+	do.Provide(injector, services.NewHTTPClient)
+	do.Provide(injector, services.NewAuth)
 
-	// TODO: Add other service providers here as they are implemented
-	// do.Provide(injector, logger.New)
-	// do.Provide(injector, auth.NewService)
-	// do.Provide(injector, client.NewHTTPClient)
-	// do.Provide(injector, notebooks.NewService)
-	// do.Provide(injector, notes.NewService)
-	// do.Provide(injector, search.NewService)
-	// do.Provide(injector, chat.NewService)
-	// do.Provide(injector, sources.NewService)
-	// do.Provide(injector, models.NewService)
-	// do.Provide(injector, jobs.NewService)
-	// do.Provide(injector, settings.NewService)
+	// Repository layer (only implemented ones)
+	do.Provide(injector, services.NewNotebookRepository)
+
+	// Service layer (only implemented ones)
+	do.Provide(injector, services.NewNotebookService)
 
 	return injector
 }
 
-// GetConfig retrieves the configuration service from the injector
+// Service getter helpers for easy access (only implemented services)
+
 func GetConfig(injector do.Injector) config.Service {
 	return do.MustInvoke[config.Service](injector)
+}
+
+func GetLogger(injector do.Injector) services.Logger {
+	return do.MustInvoke[services.Logger](injector)
+}
+
+func GetAuth(injector do.Injector) services.Auth {
+	return do.MustInvoke[services.Auth](injector)
+}
+
+func GetHTTPClient(injector do.Injector) services.HTTPClient {
+	return do.MustInvoke[services.HTTPClient](injector)
+}
+
+func GetNotebookService(injector do.Injector) services.NotebookService {
+	return do.MustInvoke[services.NotebookService](injector)
+}
+
+// Repository getters (only implemented ones)
+func GetNotebookRepository(injector do.Injector) services.NotebookRepository {
+	return do.MustInvoke[services.NotebookRepository](injector)
 }

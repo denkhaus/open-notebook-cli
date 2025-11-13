@@ -6,6 +6,7 @@ import (
 
 	"github.com/denkhaus/open-notebook-cli/pkg/commands"
 	"github.com/denkhaus/open-notebook-cli/pkg/di"
+	"github.com/denkhaus/open-notebook-cli/pkg/errors"
 	"github.com/urfave/cli/v2"
 )
 
@@ -86,7 +87,7 @@ func main() {
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		// Handle errors with comprehensive user guidance
+		errors.HandleCLIError(err, nil)
 	}
 }
