@@ -330,3 +330,4 @@ This creates a growing knowledge base that ensures consistency and preserves the
 ---
 
 **Remember:** KNOT is not optional - KNOT is our central management system! Brain Tools complement KNOT by providing the knowledge context needed for effective task execution.
+- use a dedicated *go file for every new feature to be logigally seperated

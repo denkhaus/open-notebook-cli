@@ -3,7 +3,8 @@
     "allow": [
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(knot:*)",
-      "mcp__brain__store_memory"
+      "mcp__brain__store_memory",
+      "Bash(go test:*)"
     ],
     "deny": [],
     "ask": []

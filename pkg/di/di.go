@@ -17,7 +17,7 @@ func Bootstrap(cliCtx *cli.Context) do.Injector {
 	// Core infrastructure services
 	do.Provide(injector, config.NewConfig)
 	do.Provide(injector, services.NewLogger)
-	do.Provide(injector, services.NewHTTPClient)
+	do.Provide(injector, services.NewEnhancedHTTPClient)
 	do.Provide(injector, services.NewAuth)
 
 	// Repository layer (only implemented ones)
