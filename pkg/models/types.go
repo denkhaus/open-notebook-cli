@@ -37,6 +37,26 @@ const (
 	NoteTypeAI    NoteType = "ai"
 )
 
+// ProcessingStatus represents processing status with type safety
+type ProcessingStatus string
+
+const (
+	ProcessingStatusPending   ProcessingStatus = "pending"
+	ProcessingStatusRunning   ProcessingStatus = "running"
+	ProcessingStatusCompleted ProcessingStatus = "completed"
+	ProcessingStatusFailed    ProcessingStatus = "failed"
+)
+
+// SourceStatus represents source status (legacy, for backward compatibility)
+type SourceStatus string
+
+const (
+	SourceStatusPending   SourceStatus = "pending"
+	SourceStatusRunning   SourceStatus = "running"
+	SourceStatusCompleted SourceStatus = "completed"
+	SourceStatusFailed    SourceStatus = "failed"
+)
+
 // RebuildMode represents rebuild mode with type safety
 type RebuildMode string
 
@@ -67,19 +87,19 @@ const (
 type ContentProcessingEngine string
 
 const (
-	ContentProcessingEngineAuto   ContentProcessingEngine = "auto"
+	ContentProcessingEngineAuto    ContentProcessingEngine = "auto"
 	ContentProcessingEngineDocling ContentProcessingEngine = "docling"
-	ContentProcessingEngineSimple ContentProcessingEngine = "simple"
+	ContentProcessingEngineSimple  ContentProcessingEngine = "simple"
 )
 
 // ContentProcessingEngineURL represents content processing engine for URLs
 type ContentProcessingEngineURL string
 
 const (
-	ContentProcessingEngineURLAuto     ContentProcessingEngineURL = "auto"
+	ContentProcessingEngineURLAuto      ContentProcessingEngineURL = "auto"
 	ContentProcessingEngineURLFirecrawl ContentProcessingEngineURL = "firecrawl"
-	ContentProcessingEngineURLJina     ContentProcessingEngineURL = "jina"
-	ContentProcessingEngineURLSimple   ContentProcessingEngineURL = "simple"
+	ContentProcessingEngineURLJina      ContentProcessingEngineURL = "jina"
+	ContentProcessingEngineURLSimple    ContentProcessingEngineURL = "simple"
 )
 
 // EmbeddingOption represents when to perform embedding
@@ -99,25 +119,15 @@ const (
 	ItemTypeNote   ItemType = "note"
 )
 
-// SourceStatus represents source processing status
-type SourceStatus string
-
-const (
-	SourceStatusPending   SourceStatus = "pending"
-	SourceStatusRunning   SourceStatus = "running"
-	SourceStatusCompleted SourceStatus = "completed"
-	SourceStatusFailed    SourceStatus = "failed"
-)
-
 // InsightType represents insight type for sources
 type InsightType string
 
 const (
-	InsightTypeSummary     InsightType = "summary"
-	InsightTypeAnalysis    InsightType = "analysis"
-	InsightTypeExtraction  InsightType = "extraction"
-	InsightTypeQuestion    InsightType = "question"
-	InsightTypeReflection  InsightType = "reflection"
+	InsightTypeSummary    InsightType = "summary"
+	InsightTypeAnalysis   InsightType = "analysis"
+	InsightTypeExtraction InsightType = "extraction"
+	InsightTypeQuestion   InsightType = "question"
+	InsightTypeReflection InsightType = "reflection"
 )
 
 // ContextLevel represents relevance level for context items
@@ -315,9 +325,9 @@ type Note struct {
 
 // EmbedRequest represents embedding request
 type EmbedRequest struct {
-	ItemID          string    `json:"item_id"`
-	ItemType        ItemType  `json:"item_type"` // typesafe enum
-	AsyncProcessing bool      `json:"async_processing"`
+	ItemID          string   `json:"item_id"`
+	ItemType        ItemType `json:"item_type"` // typesafe enum
+	AsyncProcessing bool     `json:"async_processing"`
 }
 
 // EmbedResponse represents embedding response
@@ -376,20 +386,20 @@ type RebuildStatusResponse struct {
 
 // SettingsResponse represents settings response
 type SettingsResponse struct {
-	DefaultContentProcessingEngineDoc ContentProcessingEngine     `json:"default_content_processing_engine_doc"`
-	DefaultContentProcessingEngineURL ContentProcessingEngineURL    `json:"default_content_processing_engine_url"`
-	DefaultEmbeddingOption            EmbeddingOption                 `json:"default_embedding_option"`
-	AutoDeleteFiles                   YesNoDecision                   `json:"auto_delete_files"`
-	YoutubePreferredLanguages         []string                          `json:"youtube_preferred_languages"`
+	DefaultContentProcessingEngineDoc ContentProcessingEngine    `json:"default_content_processing_engine_doc"`
+	DefaultContentProcessingEngineURL ContentProcessingEngineURL `json:"default_content_processing_engine_url"`
+	DefaultEmbeddingOption            EmbeddingOption            `json:"default_embedding_option"`
+	AutoDeleteFiles                   YesNoDecision              `json:"auto_delete_files"`
+	YoutubePreferredLanguages         []string                   `json:"youtube_preferred_languages"`
 }
 
 // SettingsUpdate represents settings update request
 type SettingsUpdate struct {
-	DefaultContentProcessingEngineDoc *ContentProcessingEngine     `json:"default_content_processing_engine_doc,omitempty"`
-	DefaultContentProcessingEngineURL *ContentProcessingEngineURL    `json:"default_content_processing_engine_url,omitempty"`
-	DefaultEmbeddingOption            *EmbeddingOption                 `json:"default_embedding_option,omitempty"`
-	AutoDeleteFiles                   *YesNoDecision                   `json:"auto_delete_files,omitempty"`
-	YoutubePreferredLanguages         []string                          `json:"youtube_preferred_languages,omitempty"`
+	DefaultContentProcessingEngineDoc *ContentProcessingEngine    `json:"default_content_processing_engine_doc,omitempty"`
+	DefaultContentProcessingEngineURL *ContentProcessingEngineURL `json:"default_content_processing_engine_url,omitempty"`
+	DefaultEmbeddingOption            *EmbeddingOption            `json:"default_embedding_option,omitempty"`
+	AutoDeleteFiles                   *YesNoDecision              `json:"auto_delete_files,omitempty"`
+	YoutubePreferredLanguages         []string                    `json:"youtube_preferred_languages,omitempty"`
 }
 
 // Sources API models
@@ -501,18 +511,46 @@ type CreateSourceInsightRequest struct {
 	ModelID          *string `json:"model_id,omitempty"`
 }
 
-// Source status response
+// Error response
+type ErrorResponse struct {
+	Error   string `json:"error"`
+	Message string `json:"message"`
+}
+
+// Job management models
+
+// JobStatus represents background job status
+type JobStatus struct {
+	ID       string   `json:"id"`
+	Status   string   `json:"status"` // queued, running, completed, failed
+	Progress *float64 `json:"progress,omitempty"`
+	Message  *string  `json:"message,omitempty"`
+	Created  string   `json:"created"`
+	Updated  *string  `json:"updated,omitempty"`
+}
+
+// JobsListResponse represents jobs list response
+type JobsListResponse struct {
+	Jobs []JobStatus `json:"jobs"`
+}
+
+// ModelsListResponse represents models list response with pagination
+type ModelsListResponse struct {
+	Models []Model `json:"models"`
+	Total  int     `json:"total"`
+}
+
+// SourcesListResponse represents sources list response
+type SourcesListResponse struct {
+	Sources []SourceListResponse `json:"sources"`
+}
+
+// SourceStatus represents source status response
 type SourceStatusResponse struct {
 	Status         *SourceStatus          `json:"status,omitempty"`
 	Message        string                 `json:"message"`
 	ProcessingInfo map[string]interface{} `json:"processing_info,omitempty"`
 	CommandID      *string                `json:"command_id,omitempty"`
-}
-
-// Error response
-type ErrorResponse struct {
-	Error   string `json:"error"`
-	Message string `json:"message"`
 }
 
 // Default Prompt API models

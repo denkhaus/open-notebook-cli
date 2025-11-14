@@ -46,6 +46,7 @@ type HTTPClient interface {
 
 // Repository interfaces for domain operations
 
+
 // NotebookRepository interface for notebook data operations
 type NotebookRepository interface {
 	List(ctx context.Context) ([]*models.Notebook, error)

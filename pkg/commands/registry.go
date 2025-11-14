@@ -9,10 +9,10 @@ func RegisterCommands() []*cli.Command {
 		NotebooksCommand(),
 		NotesCommand(),
 		SearchCommand(),
+		SourcesCommand(),
+		ModelsCommand(),
 		// TODO: Add more commands as they are implemented
 		// ChatCommand(),
-		// SourcesCommand(),
-		// ModelsCommand(),
 		// JobsCommand(),
 		// SettingsCommand(),
 		// PodcastCommand(),

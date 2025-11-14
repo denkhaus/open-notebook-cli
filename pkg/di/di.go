@@ -22,6 +22,7 @@ func Bootstrap(cliCtx *cli.Context) do.Injector {
 
 	// Repository layer (only implemented ones)
 	do.Provide(injector, services.NewNotebookRepository)
+	do.Provide(injector, services.NewNoteRepository)
 
 	// Service layer (only implemented ones)
 	do.Provide(injector, services.NewNotebookService)
@@ -54,4 +55,8 @@ func GetNotebookService(injector do.Injector) services.NotebookService {
 // Repository getters (only implemented ones)
 func GetNotebookRepository(injector do.Injector) services.NotebookRepository {
 	return do.MustInvoke[services.NotebookRepository](injector)
+}
+
+func GetNoteRepository(injector do.Injector) services.NoteRepository {
+	return do.MustInvoke[services.NoteRepository](injector)
 }
