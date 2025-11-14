@@ -8,21 +8,21 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/samber/do/v2"
 	"github.com/denkhaus/open-notebook-cli/pkg/config"
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/samber/do/v2"
 )
 
 // Enhanced HTTP client with retry logic and connection pooling
-type enhancedHTTPService struct {
-	*httpService                    // Embed the original service
-	retryConfig    RetryConfig
-	classifier     *NetworkErrorClassifier
-	diagnostics    *NetworkDiagnostics
+type retryableHTTPService struct {
+	*httpService // Embed the original service
+	retryConfig  RetryConfig
+	classifier   *NetworkErrorClassifier
+	diagnostics  *NetworkDiagnostics
 }
 
-// NewEnhancedHTTPClient creates an enhanced HTTP client with retry logic
-func NewEnhancedHTTPClient(injector do.Injector) (HTTPClient, error) {
+// NewRetryableHTTPClient creates an enhanced HTTP client with retry logic
+func NewRetryableHTTPClient(injector do.Injector) (HTTPClient, error) {
 	// Create the base HTTP service
 	baseService, err := NewHTTPClient(injector)
 	if err != nil {
@@ -39,11 +39,11 @@ func NewEnhancedHTTPClient(injector do.Injector) (HTTPClient, error) {
 	}
 
 	// Create enhanced service
-	enhanced := &enhancedHTTPService{
-		httpService:  baseService.(*httpService),
-		retryConfig:  httpConfig.RetryConfig,
-		classifier:   NewNetworkErrorClassifier(logger),
-		diagnostics:  NewNetworkDiagnostics(logger),
+	enhanced := &retryableHTTPService{
+		httpService: baseService.(*httpService),
+		retryConfig: httpConfig.RetryConfig,
+		classifier:  NewNetworkErrorClassifier(logger),
+		diagnostics: NewNetworkDiagnostics(logger),
 	}
 
 	// Configure the underlying HTTP client with connection pooling
@@ -59,7 +59,7 @@ func NewEnhancedHTTPClient(injector do.Injector) (HTTPClient, error) {
 }
 
 // configureHTTPClient configures the HTTP client with connection pooling settings
-func (e *enhancedHTTPService) configureHTTPClient(config ConnectionPoolConfig) {
+func (e *retryableHTTPService) configureHTTPClient(config ConnectionPoolConfig) {
 	// Create custom transport with connection pooling
 	transport := &http.Transport{
 		MaxIdleConns:        config.MaxIdleConns,
@@ -84,60 +84,60 @@ func (e *enhancedHTTPService) configureHTTPClient(config ConnectionPoolConfig) {
 }
 
 // Get performs HTTP GET with retry logic
-func (e *enhancedHTTPService) Get(ctx context.Context, endpoint string) (*models.Response, error) {
+func (e *retryableHTTPService) Get(ctx context.Context, endpoint string) (*models.Response, error) {
 	return e.classifier.RetryWithBackoff(ctx, e.retryConfig, func() (*models.Response, error) {
 		return e.httpService.Get(ctx, endpoint)
 	})
 }
 
 // Post performs HTTP POST with retry logic
-func (e *enhancedHTTPService) Post(ctx context.Context, endpoint string, body interface{}) (*models.Response, error) {
+func (e *retryableHTTPService) Post(ctx context.Context, endpoint string, body interface{}) (*models.Response, error) {
 	return e.classifier.RetryWithBackoff(ctx, e.retryConfig, func() (*models.Response, error) {
 		return e.httpService.Post(ctx, endpoint, body)
 	})
 }
 
 // Put performs HTTP PUT with retry logic
-func (e *enhancedHTTPService) Put(ctx context.Context, endpoint string, body interface{}) (*models.Response, error) {
+func (e *retryableHTTPService) Put(ctx context.Context, endpoint string, body interface{}) (*models.Response, error) {
 	return e.classifier.RetryWithBackoff(ctx, e.retryConfig, func() (*models.Response, error) {
 		return e.httpService.Put(ctx, endpoint, body)
 	})
 }
 
 // Delete performs HTTP DELETE with retry logic
-func (e *enhancedHTTPService) Delete(ctx context.Context, endpoint string) (*models.Response, error) {
+func (e *retryableHTTPService) Delete(ctx context.Context, endpoint string) (*models.Response, error) {
 	return e.classifier.RetryWithBackoff(ctx, e.retryConfig, func() (*models.Response, error) {
 		return e.httpService.Delete(ctx, endpoint)
 	})
 }
 
 // PostMultipart performs HTTP multipart POST with retry logic
-func (e *enhancedHTTPService) PostMultipart(ctx context.Context, endpoint string, fields map[string]string, files map[string]io.Reader) (*models.Response, error) {
+func (e *retryableHTTPService) PostMultipart(ctx context.Context, endpoint string, fields map[string]string, files map[string]io.Reader) (*models.Response, error) {
 	// Note: Multipart requests with file uploads are generally not retryable
 	// due to stream consumption, so we call the base method directly
 	return e.httpService.PostMultipart(ctx, endpoint, fields, files)
 }
 
 // Stream performs HTTP streaming with retry logic
-func (e *enhancedHTTPService) Stream(ctx context.Context, endpoint string, body interface{}) (<-chan []byte, error) {
+func (e *retryableHTTPService) Stream(ctx context.Context, endpoint string, body interface{}) (<-chan []byte, error) {
 	// Streaming requests are not retryable due to their stateful nature
 	// We call the base method directly
 	return e.httpService.Stream(ctx, endpoint, body)
 }
 
 // DiagnoseConnectivity performs network diagnostics for the configured API URL
-func (e *enhancedHTTPService) DiagnoseConnectivity(ctx context.Context) map[string]interface{} {
+func (e *retryableHTTPService) DiagnoseConnectivity(ctx context.Context) map[string]interface{} {
 	apiURL := e.config.GetAPIURL()
 	return e.diagnostics.DiagnoseConnectivity(ctx, apiURL)
 }
 
 // WithTimeout creates a new HTTP client with custom timeout
-func (e *enhancedHTTPService) WithTimeout(timeout time.Duration) HTTPClient {
+func (e *retryableHTTPService) WithTimeout(timeout time.Duration) HTTPClient {
 	// Create a copy of the underlying service
 	baseCopy := e.httpService.WithTimeout(timeout).(*httpService)
 
 	// Create enhanced wrapper with same retry config
-	enhancedCopy := &enhancedHTTPService{
+	enhancedCopy := &retryableHTTPService{
 		httpService: baseCopy,
 		retryConfig: e.retryConfig,
 		classifier:  e.classifier,
@@ -148,12 +148,12 @@ func (e *enhancedHTTPService) WithTimeout(timeout time.Duration) HTTPClient {
 }
 
 // GetRetryConfig returns the current retry configuration
-func (e *enhancedHTTPService) GetRetryConfig() RetryConfig {
+func (e *retryableHTTPService) GetRetryConfig() RetryConfig {
 	return e.retryConfig
 }
 
 // SetRetryConfig updates the retry configuration
-func (e *enhancedHTTPService) SetRetryConfig(config RetryConfig) {
+func (e *retryableHTTPService) SetRetryConfig(config RetryConfig) {
 	e.retryConfig = config
 	e.httpService.logger.Debug("Retry configuration updated",
 		"max_retries", config.MaxRetries,
