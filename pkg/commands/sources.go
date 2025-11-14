@@ -1,12 +1,7 @@
 package commands
 
 import (
-	"fmt"
-	"os"
-	"strings"
-
 	"github.com/urfave/cli/v2"
-	"github.com/denkhaus/open-notebook-cli/pkg/models"
 )
 
 // SourcesCommand returns the sources command
@@ -48,31 +43,31 @@ func sourcesListCommand() *cli.Command {
 		Usage: "List sources with optional filtering",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "notebook",
+				Name:    "notebook",
 				Aliases: []string{"n"},
-				Usage: "Filter by notebook ID",
+				Usage:   "Filter by notebook ID",
 			},
 			&cli.StringFlag{
-				Name:  "type",
+				Name:    "type",
 				Aliases: []string{"t"},
-				Usage: "Filter by source type (text, link, upload)",
+				Usage:   "Filter by source type (text, link, upload)",
 			},
 			&cli.StringFlag{
-				Name:  "status",
+				Name:    "status",
 				Aliases: []string{"s"},
-				Usage: "Filter by processing status (pending, running, completed, failed)",
+				Usage:   "Filter by processing status (pending, running, completed, failed)",
 			},
 			&cli.IntFlag{
-				Name:  "limit",
+				Name:    "limit",
 				Aliases: []string{"l"},
-				Usage: "Maximum number of sources to return",
-				Value: 20,
+				Usage:   "Maximum number of sources to return",
+				Value:   20,
 			},
 			&cli.IntFlag{
-				Name:  "offset",
+				Name:    "offset",
 				Aliases: []string{"o"},
-				Usage: "Number of sources to skip",
-				Value: 0,
+				Usage:   "Number of sources to skip",
+				Value:   0,
 			},
 			&cli.StringFlag{
 				Name:  "sort",
@@ -85,48 +80,7 @@ func sourcesListCommand() *cli.Command {
 				Value: "desc",
 			},
 		},
-		Action: func(c *cli.Context) error {
-			// TODO: Implement source listing with repository
-			fmt.Println("🔍 Listing sources...")
-
-			// Parse filter parameters
-			params := &models.SourcesListParams{}
-			if c.IsSet("notebook") {
-				notebookID := c.String("notebook")
-				params.NotebookID = &notebookID
-			}
-			if c.IsSet("limit") {
-				limit := c.Int("limit")
-				params.Limit = &limit
-			}
-			if c.IsSet("offset") {
-				offset := c.Int("offset")
-				params.Offset = &offset
-			}
-			if c.IsSet("sort") {
-				sortBy := c.String("sort")
-				params.SortBy = &sortBy
-			}
-			if c.IsSet("order") {
-				sortOrder := c.String("order")
-				params.SortOrder = &sortOrder
-			}
-			if c.IsSet("type") {
-				sourceTypeStr := c.String("type")
-				sourceType := models.SourceType(sourceTypeStr)
-				params.Type = &sourceType
-			}
-			if c.IsSet("status") {
-				statusStr := c.String("status")
-				status := models.ProcessingStatus(statusStr)
-				params.Status = &status
-			}
-
-			// TODO: Call repository to list sources
-			fmt.Printf("   Filters: %+v\n", params)
-			fmt.Println("   (Repository not yet implemented)")
-			return nil
-		},
+		Action: handleSourcesList,
 	}
 }
 
@@ -141,29 +95,29 @@ func sourcesAddCommand() *cli.Command {
 				Usage: "Text content to add as source",
 			},
 			&cli.StringFlag{
-				Name:  "link",
+				Name:    "link",
 				Aliases: []string{"url"},
-				Usage: "URL or web link to add as source",
+				Usage:   "URL or web link to add as source",
 			},
 			&cli.StringFlag{
-				Name:  "file",
+				Name:    "file",
 				Aliases: []string{"f"},
-				Usage: "Local file path to upload as source",
+				Usage:   "Local file path to upload as source",
 			},
 			&cli.StringFlag{
-				Name:  "title",
+				Name:    "title",
 				Aliases: []string{"t"},
-				Usage: "Title for the source",
+				Usage:   "Title for the source",
 			},
 			&cli.StringSliceFlag{
-				Name:  "topic",
+				Name:    "topic",
 				Aliases: []string{"topics"},
-				Usage: "Topics for categorization (can be specified multiple times)",
+				Usage:   "Topics for categorization (can be specified multiple times)",
 			},
 			&cli.StringSliceFlag{
-				Name:  "notebook",
+				Name:    "notebook",
 				Aliases: []string{"notebooks", "n"},
-				Usage: "Notebook IDs to associate with (can be specified multiple times)",
+				Usage:   "Notebook IDs to associate with (can be specified multiple times)",
 			},
 			&cli.BoolFlag{
 				Name:  "async",
@@ -171,75 +125,17 @@ func sourcesAddCommand() *cli.Command {
 				Value: true,
 			},
 		},
-		Action: func(c *cli.Context) error {
-			// Validate that exactly one source type is provided
-			textSet := c.IsSet("text")
-			linkSet := c.IsSet("link")
-			fileSet := c.IsSet("file")
-
-			sourceTypes := 0
-			if textSet {
-				sourceTypes++
-			}
-			if linkSet {
-				sourceTypes++
-			}
-			if fileSet {
-				sourceTypes++
-			}
-
-			if sourceTypes == 0 {
-				return fmt.Errorf("❌ Error: You must specify one of --text, --link, or --file")
-			}
-			if sourceTypes > 1 {
-				return fmt.Errorf("❌ Error: You can only specify one of --text, --link, or --file at a time")
-			}
-
-			// Parse common parameters
-			title := c.String("title")
-			topics := c.StringSlice("topic")
-			notebooks := c.StringSlice("notebook")
-			async := c.Bool("async")
-
-			var err error
-			if textSet {
-				err = addTextSource(c.String("text"), title, topics, notebooks, async)
-			} else if linkSet {
-				err = addLinkSource(c.String("link"), title, topics, notebooks, async)
-			} else if fileSet {
-				err = addFileSource(c.String("file"), title, topics, notebooks, async)
-			}
-
-			if err != nil {
-				return fmt.Errorf("❌ Failed to add source: %w", err)
-			}
-
-			return nil
-		},
+		Action: handleSourcesAdd,
 	}
 }
 
 // sourcesShowCommand shows source details
 func sourcesShowCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "show",
-		Usage: "Show detailed information about a source",
-		Args:  true,
-		Action: func(c *cli.Context) error {
-			if c.NArg() < 1 {
-				return fmt.Errorf("❌ Error: Missing source ID")
-			}
-			if c.NArg() > 1 {
-				return fmt.Errorf("❌ Error: Too many arguments. Expected only source ID")
-			}
-
-			sourceID := c.Args().First()
-			fmt.Printf("📄 Showing source details: %s\n", sourceID)
-
-			// TODO: Implement source details retrieval
-			fmt.Println("   (Repository not yet implemented)")
-			return nil
-		},
+		Name:   "show",
+		Usage:  "Show detailed information about a source",
+		Args:   true,
+		Action: handleSourcesShow,
 	}
 }
 
@@ -251,44 +147,17 @@ func sourcesUpdateCommand() *cli.Command {
 		Args:  true,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "title",
+				Name:    "title",
 				Aliases: []string{"t"},
-				Usage: "New title for the source",
+				Usage:   "New title for the source",
 			},
 			&cli.StringSliceFlag{
-				Name:  "topic",
+				Name:    "topic",
 				Aliases: []string{"topics"},
-				Usage: "New topics for categorization (replaces existing)",
+				Usage:   "New topics for categorization (replaces existing)",
 			},
 		},
-		Action: func(c *cli.Context) error {
-			if c.NArg() < 1 {
-				return fmt.Errorf("❌ Error: Missing source ID")
-			}
-			if c.NArg() > 1 {
-				return fmt.Errorf("❌ Error: Too many arguments. Expected only source ID")
-			}
-
-			if !c.IsSet("title") && !c.IsSet("topic") {
-				return fmt.Errorf("❌ Error: You must specify at least one field to update (--title or --topic)")
-			}
-
-			sourceID := c.Args().First()
-			title := c.String("title")
-			topics := c.StringSlice("topic")
-
-			fmt.Printf("✏️  Updating source: %s\n", sourceID)
-			if title != "" {
-				fmt.Printf("   Title: %s\n", title)
-			}
-			if len(topics) > 0 {
-				fmt.Printf("   Topics: %s\n", strings.Join(topics, ", "))
-			}
-
-			// TODO: Implement source update
-			fmt.Println("   (Repository not yet implemented)")
-			return nil
-		},
+		Action: handleSourcesUpdate,
 	}
 }
 
@@ -300,40 +169,13 @@ func sourcesDeleteCommand() *cli.Command {
 		Args:  true,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
-				Name:  "force",
+				Name:    "force",
 				Aliases: []string{"f"},
-				Usage: "Force deletion without confirmation",
-				Value: false,
+				Usage:   "Force deletion without confirmation",
+				Value:   false,
 			},
 		},
-		Action: func(c *cli.Context) error {
-			if c.NArg() < 1 {
-				return fmt.Errorf("❌ Error: Missing source ID")
-			}
-			if c.NArg() > 1 {
-				return fmt.Errorf("❌ Error: Too many arguments. Expected only source ID")
-			}
-
-			sourceID := c.Args().First()
-			force := c.Bool("force")
-
-			if !force {
-				fmt.Printf("⚠️  Are you sure you want to delete source '%s'? [y/N]: ", sourceID)
-				var response string
-				fmt.Scanln(&response)
-				response = strings.ToLower(strings.TrimSpace(response))
-				if response != "y" && response != "yes" {
-					fmt.Println("❌ Deletion cancelled")
-					return nil
-				}
-			}
-
-			fmt.Printf("🗑️  Deleting source: %s\n", sourceID)
-
-			// TODO: Implement source deletion
-			fmt.Println("   (Repository not yet implemented)")
-			return nil
-		},
+		Action: handleSourcesDelete,
 	}
 }
 
@@ -345,31 +187,12 @@ func sourcesDownloadCommand() *cli.Command {
 		Args:  true,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "output",
+				Name:    "output",
 				Aliases: []string{"o"},
-				Usage: "Output file path (default: current directory with original filename)",
+				Usage:   "Output file path (default: current directory with original filename)",
 			},
 		},
-		Action: func(c *cli.Context) error {
-			if c.NArg() < 1 {
-				return fmt.Errorf("❌ Error: Missing source ID")
-			}
-			if c.NArg() > 1 {
-				return fmt.Errorf("❌ Error: Too many arguments. Expected only source ID")
-			}
-
-			sourceID := c.Args().First()
-			outputPath := c.String("output")
-
-			fmt.Printf("⬇️  Downloading source file: %s\n", sourceID)
-			if outputPath != "" {
-				fmt.Printf("   Output: %s\n", outputPath)
-			}
-
-			// TODO: Implement source file download
-			fmt.Println("   (Repository not yet implemented)")
-			return nil
-		},
+		Action: handleSourcesDownload,
 	}
 }
 
@@ -381,34 +204,13 @@ func sourcesStatusCommand() *cli.Command {
 		Args:  true,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
-				Name:  "watch",
+				Name:    "watch",
 				Aliases: []string{"w"},
-				Usage: "Watch status updates continuously",
-				Value: false,
+				Usage:   "Watch status updates continuously",
+				Value:   false,
 			},
 		},
-		Action: func(c *cli.Context) error {
-			if c.NArg() < 1 {
-				return fmt.Errorf("❌ Error: Missing source ID")
-			}
-			if c.NArg() > 1 {
-				return fmt.Errorf("❌ Error: Too many arguments. Expected only source ID")
-			}
-
-			sourceID := c.Args().First()
-			watch := c.Bool("watch")
-
-			fmt.Printf("📊 Getting source status: %s\n", sourceID)
-
-			// TODO: Implement source status checking
-			fmt.Println("   (Repository not yet implemented)")
-
-			if watch {
-				fmt.Println("   (Watch mode not yet implemented)")
-			}
-
-			return nil
-		},
+		Action: handleSourcesStatus,
 	}
 }
 
@@ -425,26 +227,7 @@ func sourcesRetryCommand() *cli.Command {
 				Value: false,
 			},
 		},
-		Action: func(c *cli.Context) error {
-			if c.NArg() < 1 {
-				return fmt.Errorf("❌ Error: Missing source ID")
-			}
-			if c.NArg() > 1 {
-				return fmt.Errorf("❌ Error: Too many arguments. Expected only source ID")
-			}
-
-			sourceID := c.Args().First()
-			force := c.Bool("force")
-
-			fmt.Printf("🔄 Retrying source processing: %s\n", sourceID)
-			if force {
-				fmt.Println("   Force reprocessing enabled")
-			}
-
-			// TODO: Implement source retry
-			fmt.Println("   (Repository not yet implemented)")
-			return nil
-		},
+		Action: handleSourcesRetry,
 	}
 }
 
@@ -463,24 +246,10 @@ func sourcesInsightsCommand() *cli.Command {
 // sourcesInsightsListCommand lists source insights
 func sourcesInsightsListCommand() *cli.Command {
 	return &cli.Command{
-		Name:  "list",
-		Usage: "List insights for a source",
-		Args:  true,
-		Action: func(c *cli.Context) error {
-			if c.NArg() < 1 {
-				return fmt.Errorf("❌ Error: Missing source ID")
-			}
-			if c.NArg() > 1 {
-				return fmt.Errorf("❌ Error: Too many arguments. Expected only source ID")
-			}
-
-			sourceID := c.Args().First()
-			fmt.Printf("💡 Listing insights for source: %s\n", sourceID)
-
-			// TODO: Implement insights listing
-			fmt.Println("   (Repository not yet implemented)")
-			return nil
-		},
+		Name:   "list",
+		Usage:  "List insights for a source",
+		Args:   true,
+		Action: handleSourcesInsightsList,
 	}
 }
 
@@ -492,120 +261,12 @@ func sourcesInsightsCreateCommand() *cli.Command {
 		Args:  true,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "content",
-				Aliases: []string{"c"},
-				Usage: "Insight content",
+				Name:     "content",
+				Aliases:  []string{"c"},
+				Usage:    "Insight content",
 				Required: true,
 			},
 		},
-		Action: func(c *cli.Context) error {
-			if c.NArg() < 1 {
-				return fmt.Errorf("❌ Error: Missing source ID")
-			}
-			if c.NArg() > 1 {
-				return fmt.Errorf("❌ Error: Too many arguments. Expected only source ID")
-			}
-
-			sourceID := c.Args().First()
-			content := c.String("content")
-
-			fmt.Printf("💭 Creating insight for source: %s\n", sourceID)
-			fmt.Printf("   Content: %s\n", content)
-
-			// TODO: Implement insight creation
-			fmt.Println("   (Repository not yet implemented)")
-			return nil
-		},
+		Action: handleSourcesInsightsCreate,
 	}
-}
-
-// Helper functions for different source types
-
-func addTextSource(text, title string, topics, notebooks []string, async bool) error {
-	fmt.Println("📝 Adding text source...")
-	fmt.Printf("   Text: %s\n", truncateString(text, 100))
-	if title != "" {
-		fmt.Printf("   Title: %s\n", title)
-	}
-	if len(topics) > 0 {
-		fmt.Printf("   Topics: %s\n", strings.Join(topics, ", "))
-	}
-	if len(notebooks) > 0 {
-		fmt.Printf("   Notebooks: %s\n", strings.Join(notebooks, ", "))
-	}
-	fmt.Printf("   Async: %t\n", async)
-
-	// TODO: Implement text source creation
-	fmt.Println("   (Repository not yet implemented)")
-	return nil
-}
-
-func addLinkSource(link, title string, topics, notebooks []string, async bool) error {
-	fmt.Println("🔗 Adding link source...")
-	fmt.Printf("   URL: %s\n", link)
-	if title != "" {
-		fmt.Printf("   Title: %s\n", title)
-	}
-	if len(topics) > 0 {
-		fmt.Printf("   Topics: %s\n", strings.Join(topics, ", "))
-	}
-	if len(notebooks) > 0 {
-		fmt.Printf("   Notebooks: %s\n", strings.Join(notebooks, ", "))
-	}
-	fmt.Printf("   Async: %t\n", async)
-
-	// TODO: Implement link source creation
-	fmt.Println("   (Repository not yet implemented)")
-	return nil
-}
-
-func addFileSource(filePath, title string, topics, notebooks []string, async bool) error {
-	// Check if file exists
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return fmt.Errorf("file does not exist: %s", filePath)
-	}
-
-	fmt.Println("📁 Adding file source...")
-	fmt.Printf("   File: %s\n", filePath)
-	if title != "" {
-		fmt.Printf("   Title: %s\n", title)
-	}
-	if len(topics) > 0 {
-		fmt.Printf("   Topics: %s\n", strings.Join(topics, ", "))
-	}
-	if len(notebooks) > 0 {
-		fmt.Printf("   Notebooks: %s\n", strings.Join(notebooks, ", "))
-	}
-	fmt.Printf("   Async: %t\n", async)
-
-	// TODO: Implement file source upload
-	fmt.Println("   (Repository not yet implemented)")
-	return nil
-}
-
-// Utility function to truncate long strings
-func truncateString(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	return s[:maxLen-3] + "..."
-}
-
-// Utility function to parse comma-separated strings
-func parseCommaSeparated(input string) []string {
-	if input == "" {
-		return []string{}
-	}
-
-	parts := strings.Split(input, ",")
-	result := make([]string, 0, len(parts))
-
-	for _, part := range parts {
-		trimmed := strings.TrimSpace(part)
-		if trimmed != "" {
-			result = append(result, trimmed)
-		}
-	}
-
-	return result
 }

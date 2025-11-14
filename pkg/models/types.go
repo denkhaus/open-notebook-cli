@@ -142,33 +142,6 @@ const (
 
 // Core domain types and data models based on actual OpenNotebook API
 
-// Notebook models from OpenNotebook API
-
-// Notebook represents a notebook from the API
-type Notebook struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Archived    bool   `json:"archived"`
-	Created     string `json:"created"`
-	Updated     string `json:"updated"`
-	SourceCount int    `json:"source_count"`
-	NoteCount   int    `json:"note_count"`
-}
-
-// NotebookCreate represents notebook creation request
-type NotebookCreate struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
-// NotebookUpdate represents notebook update request
-type NotebookUpdate struct {
-	Name        *string `json:"name,omitempty"`
-	Description *string `json:"description,omitempty"`
-	Archived    *bool   `json:"archived,omitempty"`
-}
-
 // Search models from OpenNotebook API
 
 // SearchRequest represents search request
@@ -412,8 +385,8 @@ type AssetModel struct {
 
 // SourceCreate represents source creation request
 type SourceCreate struct {
-	NotebookID      *string    `json:"notebook_id,omitempty"` // deprecated
-	Notebooks       []string   `json:"notebooks,omitempty"`   // new way
+	NotebookID      *string    `json:"notebook_id,omitempty"` // use Notebooks instead
+	Notebooks       []string   `json:"notebooks,omitempty"`   // preferred way
 	Type            SourceType `json:"type"`                  // typesafe enum
 	URL             *string    `json:"url,omitempty"`
 	FilePath        *string    `json:"file_path,omitempty"`
@@ -445,7 +418,7 @@ type Source struct {
 	Updated        string                 `json:"updated"`
 	CommandID      *string                `json:"command_id,omitempty"`
 	Status         *SourceStatus          `json:"status,omitempty"`
-	ProcessingInfo map[string]interface{} `json:"processing_info,omitempty"`
+	ProcessingInfo map[string]any        `json:"processing_info,omitempty"`
 	Notebooks      []string               `json:"notebooks,omitempty"`
 }
 
@@ -463,7 +436,7 @@ type SourceListResponse struct {
 	FileAvailable  *bool                  `json:"file_available,omitempty"`
 	CommandID      *string                `json:"command_id,omitempty"`
 	Status         *SourceStatus          `json:"status,omitempty"`
-	ProcessingInfo map[string]interface{} `json:"processing_info,omitempty"`
+	ProcessingInfo map[string]any        `json:"processing_info,omitempty"`
 }
 
 // Context API models
@@ -483,8 +456,8 @@ type ContextRequest struct {
 // ContextResponse represents context response
 type ContextResponse struct {
 	NotebookID  string                   `json:"notebook_id"`
-	Sources     []map[string]interface{} `json:"sources"`
-	Notes       []map[string]interface{} `json:"notes"`
+	Sources     []map[string]any `json:"sources"`
+	Notes       []map[string]any `json:"notes"`
 	TotalTokens *int                     `json:"total_tokens,omitempty"`
 }
 
@@ -549,7 +522,7 @@ type SourcesListResponse struct {
 type SourceStatusResponse struct {
 	Status         *SourceStatus          `json:"status,omitempty"`
 	Message        string                 `json:"message"`
-	ProcessingInfo map[string]interface{} `json:"processing_info,omitempty"`
+	ProcessingInfo map[string]any        `json:"processing_info,omitempty"`
 	CommandID      *string                `json:"command_id,omitempty"`
 }
 
