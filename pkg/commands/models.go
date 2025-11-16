@@ -1,9 +1,6 @@
 package commands
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/urfave/cli/v2"
 )
 
@@ -64,31 +61,7 @@ func modelsListCommand() *cli.Command {
 				Value:   0,
 			},
 		},
-		Action: func(c *cli.Context) error {
-			fmt.Println("🤖 Listing AI models...")
-
-			// Parse filter parameters
-			if c.IsSet("type") {
-				modelType := c.String("type")
-				fmt.Printf("   Filter by type: %s\n", modelType)
-			}
-			if c.IsSet("provider") {
-				provider := c.String("provider")
-				fmt.Printf("   Filter by provider: %s\n", provider)
-			}
-			if c.IsSet("limit") {
-				limit := c.Int("limit")
-				fmt.Printf("   Limit: %d\n", limit)
-			}
-			if c.IsSet("offset") {
-				offset := c.Int("offset")
-				fmt.Printf("   Offset: %d\n", offset)
-			}
-
-			// TODO: Implement model listing with repository
-			fmt.Println("   (Repository not yet implemented)")
-			return nil
-		},
+		Action: handleModelsList,
 	}
 }
 
@@ -117,31 +90,7 @@ func modelsAddCommand() *cli.Command {
 				Required: true,
 			},
 		},
-		Action: func(c *cli.Context) error {
-			name := c.String("name")
-			provider := c.String("provider")
-			modelType := c.String("type")
-
-			fmt.Println("➕ Adding new AI model...")
-			fmt.Printf("   Name: %s\n", name)
-			fmt.Printf("   Provider: %s\n", provider)
-			fmt.Printf("   Type: %s\n", modelType)
-
-			// Validate model type
-			validTypes := map[string]bool{
-				"language":       true,
-				"embedding":      true,
-				"text_to_speech": true,
-				"speech_to_text": true,
-			}
-			if !validTypes[modelType] {
-				return fmt.Errorf("❌ Error: Invalid model type '%s'. Valid types: language, embedding, text_to_speech, speech_to_text", modelType)
-			}
-
-			// TODO: Implement model creation with repository
-			fmt.Println("   (Repository not yet implemented)")
-			return nil
-		},
+		Action: handleModelsAdd,
 	}
 }
 
@@ -151,21 +100,7 @@ func modelsShowCommand() *cli.Command {
 		Name:  "show",
 		Usage: "Show detailed information about a specific model",
 		Args:  true,
-		Action: func(c *cli.Context) error {
-			if c.NArg() < 1 {
-				return fmt.Errorf("❌ Error: Missing model ID")
-			}
-			if c.NArg() > 1 {
-				return fmt.Errorf("❌ Error: Too many arguments. Expected only model ID")
-			}
-
-			modelID := c.Args().First()
-			fmt.Printf("🔍 Showing model details: %s\n", modelID)
-
-			// TODO: Implement model details retrieval
-			fmt.Println("   (Repository not yet implemented)")
-			return nil
-		},
+		Action: handleModelsShow,
 	}
 }
 
@@ -183,34 +118,7 @@ func modelsDeleteCommand() *cli.Command {
 				Value:   false,
 			},
 		},
-		Action: func(c *cli.Context) error {
-			if c.NArg() < 1 {
-				return fmt.Errorf("❌ Error: Missing model ID")
-			}
-			if c.NArg() > 1 {
-				return fmt.Errorf("❌ Error: Too many arguments. Expected only model ID")
-			}
-
-			modelID := c.Args().First()
-			force := c.Bool("force")
-
-			if !force {
-				fmt.Printf("⚠️  Are you sure you want to delete model '%s'? [y/N]: ", modelID)
-				var response string
-				fmt.Scanln(&response)
-				response = strings.ToLower(strings.TrimSpace(response))
-				if response != "y" && response != "yes" {
-					fmt.Println("❌ Deletion cancelled")
-					return nil
-				}
-			}
-
-			fmt.Printf("🗑️  Deleting model: %s\n", modelID)
-
-			// TODO: Implement model deletion
-			fmt.Println("   (Repository not yet implemented)")
-			return nil
-		},
+		Action: handleModelsDelete,
 	}
 }
 
@@ -231,20 +139,7 @@ func modelsDefaultsShowCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "show",
 		Usage: "Show current default model assignments",
-		Action: func(c *cli.Context) error {
-			fmt.Println("🎯 Current default models:")
-
-			// TODO: Implement default models retrieval
-			fmt.Println("   Default chat model: (not yet implemented)")
-			fmt.Println("   Default embedding model: (not yet implemented)")
-			fmt.Println("   Default transformation model: (not yet implemented)")
-			fmt.Println("   Large context model: (not yet implemented)")
-			fmt.Println("   Default text-to-speech model: (not yet implemented)")
-			fmt.Println("   Default speech-to-text model: (not yet implemented)")
-			fmt.Println("   Default embedding model: (not yet implemented)")
-			fmt.Println("   Default tools model: (not yet implemented)")
-			return nil
-		},
+		Action: handleModelsDefaultsShow,
 	}
 }
 
@@ -283,40 +178,7 @@ func modelsDefaultsSetCommand() *cli.Command {
 				Usage: "Default tools model ID",
 			},
 		},
-		Action: func(c *cli.Context) error {
-			if !c.IsSet("chat") && !c.IsSet("embedding") && !c.IsSet("transformation") &&
-				!c.IsSet("large-context") && !c.IsSet("tts") && !c.IsSet("stt") && !c.IsSet("tools") {
-				return fmt.Errorf("❌ Error: You must specify at least one default model to set")
-			}
-
-			fmt.Println("⚙️  Setting default models...")
-
-			if c.IsSet("chat") {
-				fmt.Printf("   Chat: %s\n", c.String("chat"))
-			}
-			if c.IsSet("embedding") {
-				fmt.Printf("   Embedding: %s\n", c.String("embedding"))
-			}
-			if c.IsSet("transformation") {
-				fmt.Printf("   Transformation: %s\n", c.String("transformation"))
-			}
-			if c.IsSet("large-context") {
-				fmt.Printf("   Large Context: %s\n", c.String("large-context"))
-			}
-			if c.IsSet("tts") {
-				fmt.Printf("   Text-to-Speech: %s\n", c.String("tts"))
-			}
-			if c.IsSet("stt") {
-				fmt.Printf("   Speech-to-Text: %s\n", c.String("stt"))
-			}
-			if c.IsSet("tools") {
-				fmt.Printf("   Tools: %s\n", c.String("tools"))
-			}
-
-			// TODO: Implement default models setting
-			fmt.Println("   (Repository not yet implemented)")
-			return nil
-		},
+		Action: handleModelsDefaultsSet,
 	}
 }
 
@@ -325,24 +187,6 @@ func modelsProvidersCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "providers",
 		Usage: "Check AI model provider availability",
-		Action: func(c *cli.Context) error {
-			fmt.Println("🔌 Checking provider availability...")
-
-			// List of known providers
-			providers := []string{
-				"ollama", "openai", "groq", "xai", "vertex", "google",
-				"openrouter", "anthropic", "elevenlabs", "voyage",
-				"azure", "mistral", "deepseek", "openai-compatible",
-			}
-
-			fmt.Println("   Known providers:")
-			for _, provider := range providers {
-				fmt.Printf("   • %s\n", provider)
-			}
-
-			// TODO: Implement provider availability checking
-			fmt.Println("\n   Provider status: (Repository not yet implemented)")
-			return nil
-		},
+		Action: handleModelsProviders,
 	}
 }

@@ -3,11 +3,12 @@ package commands
 import (
 	"fmt"
 
-	"github.com/samber/do/v2"
-	"github.com/urfave/cli/v2"
-	"github.com/denkhaus/open-notebook-cli/pkg/services"
 	"github.com/denkhaus/open-notebook-cli/pkg/config"
 	"github.com/denkhaus/open-notebook-cli/pkg/errors"
+	"github.com/denkhaus/open-notebook-cli/pkg/services"
+	"github.com/denkhaus/open-notebook-cli/pkg/utils"
+	"github.com/samber/do/v2"
+	"github.com/urfave/cli/v2"
 )
 
 // Services holds all the services needed for auth commands
@@ -53,7 +54,7 @@ func handleAuthCheck(ctx *cli.Context) error {
 			return errors.AuthError("Failed to get auth token", err.Error())
 		}
 
-		fmt.Printf("🔑 Token: %s...\n", token[:min(20, len(token))])
+		fmt.Printf("🔑 Token: %s...\n", token[:utils.Min(20, len(token))])
 		services.Logger.Info("Authentication check completed successfully")
 	} else {
 		fmt.Println("❌ Not authenticated")
@@ -115,10 +116,20 @@ func AuthCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "auth",
 		Usage: "Authentication commands",
+		Description: "Manage OpenNotebook authentication and access control.\n\n" +
+			"Authentication secures your OpenNotebook instance:\n" +
+			"• Check current authentication status\n" +
+			"• Login with password or token\n" +
+			"• Validate API access permissions\n" +
+			"• Manage authentication sessions\n\n" +
+			"Examples:\n" +
+			"  onb auth check                           # Check if authenticated\n" +
+			"  onb auth login --password mypassword     # Login with password\n" +
+			"  onb auth login                           # Login with configured password",
 		Subcommands: []*cli.Command{
 			{
-				Name:  "check",
-				Usage: "Check authentication status",
+				Name:   "check",
+				Usage:  "Check authentication status",
 				Action: handleAuthCheck,
 			},
 			{
@@ -136,12 +147,4 @@ func AuthCommand() *cli.Command {
 			},
 		},
 	}
-}
-
-// min returns the minimum of two integers
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

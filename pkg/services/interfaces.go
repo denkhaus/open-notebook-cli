@@ -85,6 +85,8 @@ type SourceRepository interface {
 	Delete(ctx context.Context, id string) error
 	GetStatus(ctx context.Context, id string) (*models.SourceStatusResponse, error)
 	Download(ctx context.Context, id string) (io.ReadCloser, error)
+	GetInsights(ctx context.Context, sourceID string) ([]*models.SourceInsightResponse, error)
+	CreateInsight(ctx context.Context, sourceID string, req *models.CreateSourceInsightRequest) (*models.SourceInsightResponse, error)
 }
 
 // ModelRepository interface for AI model management
@@ -170,23 +172,27 @@ type SearchService interface {
 // SourceService interface for source business logic
 type SourceService interface {
 	Repository() SourceRepository
-	ListSources(ctx context.Context, limit, offset int) ([]*models.SourceListResponse, error)
+	List(ctx context.Context, limit, offset int) ([]*models.SourceListResponse, error)
 	AddSourceFromLink(ctx context.Context, link string, options *models.SourceOptions) (*models.Source, error)
 	AddSourceFromUpload(ctx context.Context, filename string, file io.Reader, options *models.SourceOptions) (*models.Source, error)
 	AddSourceFromText(ctx context.Context, text, title string, options *models.SourceOptions) (*models.Source, error)
-	GetSource(ctx context.Context, id string) (*models.Source, error)
-	UpdateSource(ctx context.Context, id string, title string, topics []string) (*models.Source, error)
-	DeleteSource(ctx context.Context, id string) error
-	GetSourceStatus(ctx context.Context, id string) (*models.SourceStatusResponse, error)
-	DownloadSource(ctx context.Context, id string) (io.ReadCloser, error)
+	Get(ctx context.Context, id string) (*models.Source, error)
+	Update(ctx context.Context, id string, title string, topics []string) (*models.Source, error)
+	Delete(ctx context.Context, id string) error
+	GetStatus(ctx context.Context, id string) (*models.SourceStatusResponse, error)
+	Download(ctx context.Context, id string) (io.ReadCloser, error)
+	Create(ctx context.Context, source *models.SourceCreate) (*models.Source, error)
+	CreateFromJSON(ctx context.Context, source *models.SourceCreate) (*models.Source, error)
+	GetInsights(ctx context.Context, sourceID string) ([]*models.SourceInsightResponse, error)
+	CreateInsight(ctx context.Context, sourceID string, request *models.CreateSourceInsightRequest) (*models.SourceInsightResponse, error)
 }
 
 // ModelService interface for model business logic
 type ModelService interface {
 	Repository() ModelRepository
-	ListModels(ctx context.Context) ([]*models.Model, error)
-	AddModel(ctx context.Context, model *models.ModelCreate) (*models.Model, error)
-	DeleteModel(ctx context.Context, id string) error
+	List(ctx context.Context) ([]*models.Model, error)
+	Create(ctx context.Context, model *models.ModelCreate) (*models.Model, error)
+	Delete(ctx context.Context, id string) error
 	GetDefaults(ctx context.Context) (*models.DefaultModelsResponse, error)
 	SetDefaults(ctx context.Context, defaults *models.DefaultModelsResponse) error
 	GetProviders(ctx context.Context) (*models.ProviderAvailabilityResponse, error)
@@ -232,4 +238,52 @@ type InsightsService interface {
 	SaveInsightAsNote(ctx context.Context, insightID string, notebookID string) (*models.Note, error)
 	GetDefaultPrompt(ctx context.Context) (*models.DefaultPromptResponse, error)
 	UpdateDefaultPrompt(ctx context.Context, instructions string) (*models.DefaultPromptResponse, error)
+}
+
+// JobRepository interface for background job management
+type JobRepository interface {
+	List(ctx context.Context) (*models.JobsListResponse, error)
+	GetStatus(ctx context.Context, jobID string) (*models.JobStatus, error)
+	Cancel(ctx context.Context, jobID string) error
+}
+
+// JobService interface for job business logic
+type JobService interface {
+	Repository() JobRepository
+	ListJobs(ctx context.Context) (*models.JobsListResponse, error)
+	GetJobStatus(ctx context.Context, jobID string) (*models.JobStatus, error)
+	CancelJob(ctx context.Context, jobID string) error
+}
+
+// ChatRepository interface for chat and session management
+type ChatRepository interface {
+	ListSessions(ctx context.Context) (*models.ChatSessionsResponse, error)
+	ListSessionsForNotebook(ctx context.Context, notebookID string) (*models.ChatSessionsResponse, error)
+	CreateSession(ctx context.Context, req *models.ChatCreateRequest) (*models.ChatSession, error)
+	GetSession(ctx context.Context, sessionID string) (*models.ChatSession, error)
+	DeleteSession(ctx context.Context, sessionID string) error
+	ExecuteChat(ctx context.Context, req *models.ChatExecuteRequest) (*models.ChatExecuteResponse, error)
+	StreamChat(ctx context.Context, req *models.ChatExecuteRequest) (<-chan *models.StreamChunk, error)
+	GetMessages(ctx context.Context, sessionID string) ([]*models.ChatMessage, error)
+}
+
+// PodcastRepository interface for podcast generation and episode management
+type PodcastRepository interface {
+	Generate(ctx context.Context, req *models.PodcastGenerationRequest) (*models.PodcastGenerationResponse, error)
+	GetJobStatus(ctx context.Context, jobID string) (*models.PodcastJobStatus, error)
+	ListEpisodes(ctx context.Context, limit, offset int) (*models.PodcastEpisodesListResponse, error)
+	GetEpisode(ctx context.Context, episodeID string) (*models.PodcastEpisodeResponse, error)
+	DownloadEpisodeAudio(ctx context.Context, episodeID string) (io.ReadCloser, error)
+	DeleteEpisode(ctx context.Context, episodeID string) error
+}
+
+// PodcastService interface for podcast business logic
+type PodcastService interface {
+	Repository() PodcastRepository
+	ListEpisodes(ctx context.Context, limit, offset int) (*models.PodcastEpisodesListResponse, error)
+	GeneratePodcast(ctx context.Context, query string, sources, notebooks []string, modelID *string, voice, language, style string) (*models.PodcastGenerationResponse, error)
+	GetEpisode(ctx context.Context, episodeID string) (*models.PodcastEpisodeResponse, error)
+	DownloadEpisodeAudio(ctx context.Context, episodeID string) (io.ReadCloser, error)
+	DeleteEpisode(ctx context.Context, episodeID string) error
+	GetJobStatus(ctx context.Context, jobID string) (*models.PodcastJobStatus, error)
 }

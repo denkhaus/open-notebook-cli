@@ -21,13 +21,22 @@ func Bootstrap(cliCtx *cli.Context) do.Injector {
 	do.Provide(injector, services.NewAuth)
 
 	// Repository layer (only implemented ones)
+	do.Provide(injector, services.NewSourceRepository)
+	do.Provide(injector, services.NewModelRepository)
+	do.Provide(injector, services.NewChatRepository)
 	do.Provide(injector, services.NewNotebookRepository)
+	do.Provide(injector, services.NewJobRepository)
+	do.Provide(injector, services.NewPodcastRepository)
 	do.Provide(injector, services.NewNoteRepository)
 	do.Provide(injector, services.NewSearchRepository)
 
 	// Service layer (only implemented ones)
 	do.Provide(injector, services.NewNotebookService)
 	do.Provide(injector, services.NewSearchService)
+	do.Provide(injector, services.NewModelService)
+	do.Provide(injector, services.NewSourceService)
+	do.Provide(injector, services.NewPodcastService)
+	do.Provide(injector, services.NewJobService)
 
 	return injector
 }
@@ -69,4 +78,40 @@ func GetNoteRepository(injector do.Injector) services.NoteRepository {
 
 func GetSearchRepository(injector do.Injector) services.SearchRepository {
 	return do.MustInvoke[services.SearchRepository](injector)
+}
+
+func GetSourceRepository(injector do.Injector) services.SourceRepository {
+	return do.MustInvoke[services.SourceRepository](injector)
+}
+
+func GetSourceService(injector do.Injector) services.SourceService {
+	return do.MustInvoke[services.SourceService](injector)
+}
+
+func GetChatRepository(injector do.Injector) services.ChatRepository {
+	return do.MustInvoke[services.ChatRepository](injector)
+}
+
+func GetModelRepository(injector do.Injector) services.ModelRepository {
+	return do.MustInvoke[services.ModelRepository](injector)
+}
+
+func GetModelService(injector do.Injector) services.ModelService {
+	return do.MustInvoke[services.ModelService](injector)
+}
+
+func GetJobRepository(injector do.Injector) services.JobRepository {
+	return do.MustInvoke[services.JobRepository](injector)
+}
+
+func GetJobService(injector do.Injector) services.JobService {
+	return do.MustInvoke[services.JobService](injector)
+}
+
+func GetPodcastRepository(injector do.Injector) services.PodcastRepository {
+	return do.MustInvoke[services.PodcastRepository](injector)
+}
+
+func GetPodcastService(injector do.Injector) services.PodcastService {
+	return do.MustInvoke[services.PodcastService](injector)
 }

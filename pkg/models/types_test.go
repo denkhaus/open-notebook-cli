@@ -356,11 +356,11 @@ func TestEnumValueUniqueness(t *testing.T) {
 	// Some values like "auto", "running", "completed", "failed" can be used
 	// across different enum types as they have different semantic meanings
 	semanticallyOverlappingValues := map[string][]string{
-		"auto":    {"ContentProcessingEngine", "ContentProcessingEngineURL"},
-		"running": {"RebuildStatus", "SourceStatus"},
+		"auto":      {"ContentProcessingEngine", "ContentProcessingEngineURL"},
+		"running":   {"RebuildStatus", "SourceStatus"},
 		"completed": {"RebuildStatus", "SourceStatus"},
-		"failed": {"RebuildStatus", "SourceStatus"},
-		"text":    {"SourceType", "SearchType"},
+		"failed":    {"RebuildStatus", "SourceStatus"},
+		"text":      {"SourceType", "SearchType"},
 	}
 
 	// Note: These overlaps are acceptable as the enums represent different domains

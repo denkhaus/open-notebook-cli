@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/samber/do/v2"
 )
 
 type sourceRepository struct {
@@ -20,11 +21,14 @@ type sourceRepository struct {
 }
 
 // NewSourceRepository creates a new source repository
-func NewSourceRepository(httpClient HTTPClient, logger Logger) SourceRepository {
+func NewSourceRepository(injector do.Injector) (SourceRepository, error) {
+	httpClient := do.MustInvoke[HTTPClient](injector)
+	logger := do.MustInvoke[Logger](injector)
+
 	return &sourceRepository{
 		httpClient: httpClient,
 		logger:     logger,
-	}
+	}, nil
 }
 
 // List implements existing SourceRepository interface
@@ -33,7 +37,7 @@ func (s *sourceRepository) List(ctx context.Context, limit, offset int) ([]*mode
 	queryParams.Set("limit", fmt.Sprintf("%d", limit))
 	queryParams.Set("offset", fmt.Sprintf("%d", offset))
 
-	endpoint := "/api/sources?" + queryParams.Encode()
+	endpoint := "/sources?" + queryParams.Encode()
 	resp, err := s.httpClient.Get(ctx, endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list sources: %w", err)
@@ -45,9 +49,9 @@ func (s *sourceRepository) List(ctx context.Context, limit, offset int) ([]*mode
 	}
 
 	// Convert to pointer slice
-	sources := make([]*models.SourceListResponse, len(result.Sources))
-	for i := range result.Sources {
-		sources[i] = &result.Sources[i]
+	sources := make([]*models.SourceListResponse, len(result))
+	for i := range result {
+		sources[i] = &result[i]
 	}
 
 	s.logger.Info("Retrieved sources", "count", len(sources))
@@ -56,7 +60,19 @@ func (s *sourceRepository) List(ctx context.Context, limit, offset int) ([]*mode
 
 // Create implements existing SourceRepository interface
 func (s *sourceRepository) Create(ctx context.Context, source *models.SourceCreate) (*models.Source, error) {
-	resp, err := s.httpClient.Post(ctx, "/api/sources", source)
+	// Debug: log what we're sending
+	if source.Type != "" {
+		s.logger.Info("Creating source", "type", string(source.Type), "title", *source.Title, "url", *source.URL)
+	}
+
+	// Debug: log the actual JSON being sent
+	jsonBytes, err := json.Marshal(source)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal source: %w", err)
+	}
+	s.logger.Info("Sending JSON", "payload", string(jsonBytes))
+
+	resp, err := s.httpClient.Post(ctx, "/sources/json", source)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create source: %w", err)
 	}
@@ -64,6 +80,11 @@ func (s *sourceRepository) Create(ctx context.Context, source *models.SourceCrea
 	var result models.Source
 	if err := json.Unmarshal(resp.Body, &result); err != nil {
 		return nil, fmt.Errorf("failed to parse source response: %w", err)
+	}
+
+	// Fail loud if ID is missing - API should always return an ID
+	if result.ID == nil {
+		return nil, fmt.Errorf("API error: created source returned without ID")
 	}
 
 	s.logger.Info("Created source", "id", *result.ID, "type", source.Type)
@@ -77,7 +98,7 @@ func (s *sourceRepository) CreateFromJSON(ctx context.Context, source *models.So
 
 // Get implements existing SourceRepository interface
 func (s *sourceRepository) Get(ctx context.Context, id string) (*models.Source, error) {
-	endpoint := fmt.Sprintf("/api/sources/%s", id)
+	endpoint := fmt.Sprintf("/sources/%s", id)
 	resp, err := s.httpClient.Get(ctx, endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get source %s: %w", id, err)
@@ -94,7 +115,7 @@ func (s *sourceRepository) Get(ctx context.Context, id string) (*models.Source, 
 
 // Update implements existing SourceRepository interface
 func (s *sourceRepository) Update(ctx context.Context, id string, source *models.SourceUpdate) (*models.Source, error) {
-	endpoint := fmt.Sprintf("/api/sources/%s", id)
+	endpoint := fmt.Sprintf("/sources/%s", id)
 	resp, err := s.httpClient.Put(ctx, endpoint, source)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update source %s: %w", id, err)
@@ -111,7 +132,7 @@ func (s *sourceRepository) Update(ctx context.Context, id string, source *models
 
 // Delete implements existing SourceRepository interface
 func (s *sourceRepository) Delete(ctx context.Context, id string) error {
-	endpoint := fmt.Sprintf("/api/sources/%s", id)
+	endpoint := fmt.Sprintf("/sources/%s", id)
 	_, err := s.httpClient.Delete(ctx, endpoint)
 	if err != nil {
 		return fmt.Errorf("failed to delete source %s: %w", id, err)
@@ -123,7 +144,7 @@ func (s *sourceRepository) Delete(ctx context.Context, id string) error {
 
 // GetStatus implements existing SourceRepository interface
 func (s *sourceRepository) GetStatus(ctx context.Context, id string) (*models.SourceStatusResponse, error) {
-	endpoint := fmt.Sprintf("/api/sources/%s/status", id)
+	endpoint := fmt.Sprintf("/sources/%s/status", id)
 	resp, err := s.httpClient.Get(ctx, endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get source status %s: %w", id, err)
@@ -140,7 +161,7 @@ func (s *sourceRepository) GetStatus(ctx context.Context, id string) (*models.So
 
 // Download implements existing SourceRepository interface
 func (s *sourceRepository) Download(ctx context.Context, id string) (io.ReadCloser, error) {
-	endpoint := fmt.Sprintf("/api/sources/%s/download", id)
+	endpoint := fmt.Sprintf("/sources/%s/download", id)
 	resp, err := s.httpClient.Get(ctx, endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download source %s: %w", id, err)
@@ -186,7 +207,7 @@ func (s *sourceRepository) CreateFromFile(ctx context.Context, filePath string, 
 	}
 	fields := map[string]string{}
 
-	resp, err := s.httpClient.PostMultipart(ctx, "/api/sources", fields, files)
+	resp, err := s.httpClient.PostMultipart(ctx, "/sources", fields, files)
 	if err != nil {
 		return nil, fmt.Errorf("failed to upload file: %w", err)
 	}
@@ -198,4 +219,50 @@ func (s *sourceRepository) CreateFromFile(ctx context.Context, filePath string, 
 
 	s.logger.Info("Created source from file", "id", *result.ID, "file", filePath)
 	return &result, nil
+}
+
+// GetInsights retrieves insights for a source
+func (r *sourceRepository) GetInsights(ctx context.Context, sourceID string) ([]*models.SourceInsightResponse, error) {
+	r.logger.Info("Getting insights for source", "source_id", sourceID)
+
+	endpoint := fmt.Sprintf("/sources/%s/insights", sourceID)
+	resp, err := r.httpClient.Get(ctx, endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get source insights: %w", err)
+	}
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("API error: %d - %s", resp.StatusCode, string(resp.Body))
+	}
+
+	var insights []*models.SourceInsightResponse
+	if err := json.Unmarshal(resp.Body, &insights); err != nil {
+		return nil, fmt.Errorf("failed to decode insights response: %w", err)
+	}
+
+	r.logger.Info("Retrieved insights", "count", len(insights))
+	return insights, nil
+}
+
+// CreateInsight creates a new insight for a source
+func (r *sourceRepository) CreateInsight(ctx context.Context, sourceID string, req *models.CreateSourceInsightRequest) (*models.SourceInsightResponse, error) {
+	r.logger.Info("Creating insight for source", "source_id", sourceID)
+
+	endpoint := fmt.Sprintf("/sources/%s/insights", sourceID)
+	resp, err := r.httpClient.Post(ctx, endpoint, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create insight: %w", err)
+	}
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("API error: %d - %s", resp.StatusCode, string(resp.Body))
+	}
+
+	var insight models.SourceInsightResponse
+	if err := json.Unmarshal(resp.Body, &insight); err != nil {
+		return nil, fmt.Errorf("failed to decode insight response: %w", err)
+	}
+
+	r.logger.Info("Created insight", "insight_id", insight.ID)
+	return &insight, nil
 }

@@ -4,7 +4,17 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(knot:*)",
       "mcp__brain__store_memory",
-      "Bash(go test:*)"
+      "Bash(go test:*)",
+      "Bash(curl:*)",
+      "mcp__chrome-devtools__fill",
+      "mcp__chrome-devtools__take_snapshot",
+      "mcp__chrome-devtools__click",
+      "mcp__chrome-devtools__list_network_requests",
+      "mcp__chrome-devtools__get_network_request",
+      "WebFetch(domain:github.com)",
+      "Bash(./onb sources add:*)",
+      "mcp__brain__auto_detect_references",
+      "mcp__brain__create_memory_relationship"
     ],
     "deny": [],
     "ask": []

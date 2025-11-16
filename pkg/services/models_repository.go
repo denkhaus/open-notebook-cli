@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/samber/do/v2"
 )
 
 type modelRepository struct {
@@ -16,16 +17,19 @@ type modelRepository struct {
 }
 
 // NewModelRepository creates a new model repository
-func NewModelRepository(httpClient HTTPClient, logger Logger) ModelRepository {
+func NewModelRepository(injector do.Injector) (ModelRepository, error) {
+	httpClient := do.MustInvoke[HTTPClient](injector)
+	logger := do.MustInvoke[Logger](injector)
+
 	return &modelRepository{
 		httpClient: httpClient,
 		logger:     logger,
-	}
+	}, nil
 }
 
 // List implements ModelRepository interface
 func (m *modelRepository) List(ctx context.Context) ([]*models.Model, error) {
-	endpoint := "/api/models"
+	endpoint := "/models"
 	resp, err := m.httpClient.Get(ctx, endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list models: %w", err)
@@ -42,7 +46,7 @@ func (m *modelRepository) List(ctx context.Context) ([]*models.Model, error) {
 
 // Create implements ModelRepository interface
 func (m *modelRepository) Create(ctx context.Context, model *models.ModelCreate) (*models.Model, error) {
-	resp, err := m.httpClient.Post(ctx, "/api/models", model)
+	resp, err := m.httpClient.Post(ctx, "/models", model)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create model: %w", err)
 	}
@@ -58,7 +62,7 @@ func (m *modelRepository) Create(ctx context.Context, model *models.ModelCreate)
 
 // Delete implements ModelRepository interface
 func (m *modelRepository) Delete(ctx context.Context, id string) error {
-	endpoint := fmt.Sprintf("/api/models/%s", id)
+	endpoint := fmt.Sprintf("/models/%s", id)
 	_, err := m.httpClient.Delete(ctx, endpoint)
 	if err != nil {
 		return fmt.Errorf("failed to delete model %s: %w", id, err)
@@ -70,7 +74,7 @@ func (m *modelRepository) Delete(ctx context.Context, id string) error {
 
 // GetDefaults implements ModelRepository interface
 func (m *modelRepository) GetDefaults(ctx context.Context) (*models.DefaultModelsResponse, error) {
-	endpoint := "/api/models/defaults"
+	endpoint := "/models/defaults"
 	resp, err := m.httpClient.Get(ctx, endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get default models: %w", err)
@@ -87,7 +91,7 @@ func (m *modelRepository) GetDefaults(ctx context.Context) (*models.DefaultModel
 
 // SetDefaults implements ModelRepository interface
 func (m *modelRepository) SetDefaults(ctx context.Context, defaults *models.DefaultModelsResponse) error {
-	endpoint := "/api/models/defaults"
+	endpoint := "/models/defaults"
 	resp, err := m.httpClient.Put(ctx, endpoint, defaults)
 	if err != nil {
 		return fmt.Errorf("failed to set default models: %w", err)
@@ -104,7 +108,7 @@ func (m *modelRepository) SetDefaults(ctx context.Context, defaults *models.Defa
 
 // GetProviders implements ModelRepository interface
 func (m *modelRepository) GetProviders(ctx context.Context) (*models.ProviderAvailabilityResponse, error) {
-	endpoint := "/api/models/providers"
+	endpoint := "/models/providers"
 	resp, err := m.httpClient.Get(ctx, endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get providers: %w", err)
@@ -126,7 +130,7 @@ func (m *modelRepository) ListByType(ctx context.Context, modelType models.Model
 	queryParams := url.Values{}
 	queryParams.Set("type", string(modelType))
 
-	endpoint := "/api/models?" + queryParams.Encode()
+	endpoint := "/models?" + queryParams.Encode()
 	resp, err := m.httpClient.Get(ctx, endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list models by type %s: %w", modelType, err)
@@ -146,7 +150,7 @@ func (m *modelRepository) ListByProvider(ctx context.Context, provider string) (
 	queryParams := url.Values{}
 	queryParams.Set("provider", provider)
 
-	endpoint := "/api/models?" + queryParams.Encode()
+	endpoint := "/models?" + queryParams.Encode()
 	resp, err := m.httpClient.Get(ctx, endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list models by provider %s: %w", provider, err)
@@ -167,7 +171,7 @@ func (m *modelRepository) ListWithPagination(ctx context.Context, limit, offset 
 	queryParams.Set("limit", strconv.Itoa(limit))
 	queryParams.Set("offset", strconv.Itoa(offset))
 
-	endpoint := "/api/models?" + queryParams.Encode()
+	endpoint := "/models?" + queryParams.Encode()
 	resp, err := m.httpClient.Get(ctx, endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list models with pagination: %w", err)

@@ -11,10 +11,11 @@ func RegisterCommands() []*cli.Command {
 		SearchCommand(),
 		SourcesCommand(),
 		ModelsCommand(),
+		TransformationsCommand(),
+		JobsCommand(),
+		PodcastCommand(),
+		SettingsCommand(),
+		ChatCommand(),
 		// TODO: Add more commands as they are implemented
-		// ChatCommand(),
-		// JobsCommand(),
-		// SettingsCommand(),
-		// PodcastCommand(),
 	}
 }

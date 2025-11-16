@@ -94,3 +94,11 @@ func JoinNonEmpty(separator string, parts ...string) string {
 
 // Helper functions for Source model migration between V1 and V2
 
+// Min returns the minimum of two integers
+func Min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
