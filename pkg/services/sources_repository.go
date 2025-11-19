@@ -12,18 +12,19 @@ import (
 	"strings"
 
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/samber/do/v2"
 )
 
 type sourceRepository struct {
-	httpClient HTTPClient
-	logger     Logger
+	httpClient shared.HTTPClient
+	logger     shared.Logger
 }
 
 // NewSourceRepository creates a new source repository
-func NewSourceRepository(injector do.Injector) (SourceRepository, error) {
-	httpClient := do.MustInvoke[HTTPClient](injector)
-	logger := do.MustInvoke[Logger](injector)
+func NewSourceRepository(injector do.Injector) (shared.SourceRepository, error) {
+	httpClient := do.MustInvoke[shared.HTTPClient](injector)
+	logger := do.MustInvoke[shared.Logger](injector)
 
 	return &sourceRepository{
 		httpClient: httpClient,

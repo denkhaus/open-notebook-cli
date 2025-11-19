@@ -11,7 +11,7 @@ import (
 	"github.com/denkhaus/open-notebook-cli/pkg/config"
 	"github.com/denkhaus/open-notebook-cli/pkg/errors"
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
-	"github.com/denkhaus/open-notebook-cli/pkg/services"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/denkhaus/open-notebook-cli/pkg/utils"
 	"github.com/samber/do/v2"
 	"github.com/urfave/cli/v2"
@@ -19,9 +19,9 @@ import (
 
 // PodcastServices holds all the services needed for podcast commands
 type PodcastServices struct {
-	PodcastRepository services.PodcastRepository
+	PodcastRepository shared.PodcastRepository
 	Config            config.Service
-	Logger            services.Logger
+	Logger            shared.Logger
 }
 
 // getPodcastServices retrieves all required services via dependency injection
@@ -33,9 +33,9 @@ func getPodcastServices(ctx *cli.Context) (*PodcastServices, error) {
 	}
 
 	return &PodcastServices{
-		PodcastRepository: do.MustInvoke[services.PodcastRepository](injector),
+		PodcastRepository: do.MustInvoke[shared.PodcastRepository](injector),
 		Config:            do.MustInvoke[config.Service](injector),
-		Logger:            do.MustInvoke[services.Logger](injector),
+		Logger:            do.MustInvoke[shared.Logger](injector),
 	}, nil
 }
 

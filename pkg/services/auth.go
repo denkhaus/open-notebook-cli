@@ -9,27 +9,28 @@ import (
 	"sync"
 	"time"
 
-	"github.com/samber/do/v2"
 	"github.com/denkhaus/open-notebook-cli/pkg/config"
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
+	"github.com/samber/do/v2"
 )
 
 // Private auth implementation
 type auth struct {
-	config    config.Service
-	logger    Logger
-	http      HTTPClient
-	mu        sync.RWMutex
-	token     string
+	config   config.Service
+	logger   shared.Logger
+	http     shared.HTTPClient
+	mu       sync.RWMutex
+	token    string
 	tokenEx  time.Time
-	password  string
+	password string
 }
 
 // NewAuth creates a new auth service
-func NewAuth(injector do.Injector) (Auth, error) {
+func NewAuth(injector do.Injector) (shared.Auth, error) {
 	cfg := do.MustInvoke[config.Service](injector)
-	logger := do.MustInvoke[Logger](injector)
-	http := do.MustInvoke[HTTPClient](injector)
+	logger := do.MustInvoke[shared.Logger](injector)
+	http := do.MustInvoke[shared.HTTPClient](injector)
 
 	a := &auth{
 		config: cfg,
@@ -147,11 +148,11 @@ func (a *auth) setToken(token string) {
 
 // HTTPClient decorator that adds authentication
 type authenticatedHTTPClient struct {
-	http  HTTPClient
-	auth  Auth
+	http shared.HTTPClient
+	auth shared.Auth
 }
 
-func NewAuthenticatedHTTPClient(base HTTPClient, auth Auth) HTTPClient {
+func NewAuthenticatedHTTPClient(base shared.HTTPClient, auth shared.Auth) shared.HTTPClient {
 	return &authenticatedHTTPClient{
 		http: base,
 		auth: auth,
@@ -204,7 +205,7 @@ func (a *authenticatedHTTPClient) SetAuth(token string) {
 	a.http.SetAuth(token)
 }
 
-func (a *authenticatedHTTPClient) WithTimeout(timeout time.Duration) HTTPClient {
+func (a *authenticatedHTTPClient) WithTimeout(timeout time.Duration) shared.HTTPClient {
 	return &authenticatedHTTPClient{
 		http: a.http.WithTimeout(timeout),
 		auth: a.auth,
@@ -232,7 +233,7 @@ type mockAuth struct {
 	password string
 }
 
-func NewMockAuth() Auth {
+func NewMockAuth() shared.Auth {
 	return &mockAuth{}
 }
 

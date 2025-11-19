@@ -4,12 +4,13 @@ import (
 	"context"
 
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/samber/do/v2"
 )
 
 // NewSearchService creates a new search service
-func NewSearchService(injector do.Injector) (SearchService, error) {
-	repo := do.MustInvoke[SearchRepository](injector)
+func NewSearchService(injector do.Injector) (shared.SearchService, error) {
+	repo := do.MustInvoke[shared.SearchRepository](injector)
 
 	return &searchService{
 		repo: repo,
@@ -17,7 +18,7 @@ func NewSearchService(injector do.Injector) (SearchService, error) {
 }
 
 // Repository returns the underlying repository
-func (s *searchService) Repository() SearchRepository {
+func (s *searchService) Repository() shared.SearchRepository {
 	return s.repo
 }
 

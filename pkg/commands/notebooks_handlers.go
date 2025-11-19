@@ -7,7 +7,7 @@ import (
 
 	"github.com/denkhaus/open-notebook-cli/pkg/config"
 	"github.com/denkhaus/open-notebook-cli/pkg/errors"
-	"github.com/denkhaus/open-notebook-cli/pkg/services"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/samber/do/v2"
 	"github.com/urfave/cli/v2"
 )
@@ -21,9 +21,9 @@ func getNotebookServices(ctx *cli.Context) (*NotebookServices, error) {
 	}
 
 	return &NotebookServices{
-		NotebookService: do.MustInvoke[services.NotebookService](injector),
+		NotebookService: do.MustInvoke[shared.NotebookService](injector),
 		Config:          do.MustInvoke[config.Service](injector),
-		Logger:          do.MustInvoke[services.Logger](injector),
+		Logger:          do.MustInvoke[shared.Logger](injector),
 	}, nil
 }
 

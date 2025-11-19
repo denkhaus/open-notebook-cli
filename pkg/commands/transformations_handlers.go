@@ -9,7 +9,7 @@ import (
 	"github.com/denkhaus/open-notebook-cli/pkg/config"
 	"github.com/denkhaus/open-notebook-cli/pkg/errors"
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
-	"github.com/denkhaus/open-notebook-cli/pkg/services"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/denkhaus/open-notebook-cli/pkg/utils"
 	"github.com/samber/do/v2"
 	"github.com/urfave/cli/v2"
@@ -17,9 +17,9 @@ import (
 
 // TransformationsServices holds all the services needed for transformation commands
 type TransformationsServices struct {
-	TransformationService services.TransformationRepository
-	Config               config.Service
-	Logger               services.Logger
+	TransformationService shared.TransformationRepository
+	Config                config.Service
+	Logger                shared.Logger
 }
 
 // getTransformationsServices retrieves all required services via dependency injection
@@ -31,9 +31,9 @@ func getTransformationsServices(ctx *cli.Context) (*TransformationsServices, err
 	}
 
 	return &TransformationsServices{
-		TransformationService: do.MustInvoke[services.TransformationRepository](injector),
-		Config:               do.MustInvoke[config.Service](injector),
-		Logger:               do.MustInvoke[services.Logger](injector),
+		TransformationService: do.MustInvoke[shared.TransformationRepository](injector),
+		Config:                do.MustInvoke[config.Service](injector),
+		Logger:                do.MustInvoke[shared.Logger](injector),
 	}, nil
 }
 

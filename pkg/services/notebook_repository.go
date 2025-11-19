@@ -6,17 +6,18 @@ import (
 	"fmt"
 
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 
 	"github.com/samber/do/v2"
 )
 
 type notebookRepository struct {
-	http HTTPClient
+	http shared.HTTPClient
 }
 
 // NewNotebookRepository creates a new notebook repository
-func NewNotebookRepository(injector do.Injector) (NotebookRepository, error) {
-	http := do.MustInvoke[HTTPClient](injector)
+func NewNotebookRepository(injector do.Injector) (shared.NotebookRepository, error) {
+	http := do.MustInvoke[shared.HTTPClient](injector)
 
 	return &notebookRepository{
 		http: http,

@@ -1,4 +1,4 @@
-package services
+package mocks
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 )
 
 // MockHTTPClient is a mock implementation of HTTPClient for testing
@@ -14,7 +15,7 @@ type MockHTTPClient struct {
 }
 
 // NewMockHTTPClient creates a new mock HTTP client for testing
-func NewMockHTTPClient() HTTPClient {
+func NewMockHTTPClient() shared.HTTPClient {
 	return &MockHTTPClient{
 		responses: make(map[string]*models.Response),
 	}
@@ -102,6 +103,6 @@ func (m *MockHTTPClient) SetAuth(token string) {
 }
 
 // WithTimeout mock implementation
-func (m *MockHTTPClient) WithTimeout(timeout time.Duration) HTTPClient {
+func (m *MockHTTPClient) WithTimeout(timeout time.Duration) shared.HTTPClient {
 	return m
 }

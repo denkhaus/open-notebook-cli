@@ -5,7 +5,7 @@ import (
 
 	"github.com/denkhaus/open-notebook-cli/pkg/config"
 	"github.com/denkhaus/open-notebook-cli/pkg/errors"
-	"github.com/denkhaus/open-notebook-cli/pkg/services"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/denkhaus/open-notebook-cli/pkg/utils"
 	"github.com/samber/do/v2"
 	"github.com/urfave/cli/v2"
@@ -13,9 +13,9 @@ import (
 
 // Services holds all the services needed for auth commands
 type AuthServices struct {
-	Auth   services.Auth
+	Auth   shared.Auth
 	Config config.Service
-	Logger services.Logger
+	Logger shared.Logger
 }
 
 // getAuthServices retrieves all required services via dependency injection
@@ -27,9 +27,9 @@ func getAuthServices(ctx *cli.Context) (*AuthServices, error) {
 	}
 
 	return &AuthServices{
-		Auth:   do.MustInvoke[services.Auth](injector),
+		Auth:   do.MustInvoke[shared.Auth](injector),
 		Config: do.MustInvoke[config.Service](injector),
-		Logger: do.MustInvoke[services.Logger](injector),
+		Logger: do.MustInvoke[shared.Logger](injector),
 	}, nil
 }
 

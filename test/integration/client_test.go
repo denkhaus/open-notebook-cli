@@ -528,8 +528,12 @@ func testSourcesEndpointsLive(t *testing.T, httpClient interface{}) {
 
 		// Log source details
 		for _, source := range sources {
-			t.Logf("   Source: %v - Embedded: %v (%d chunks)",
-				source.Title, source.Embedded, source.EmbeddedChunks)
+			title := "No Title"
+			if source.Title != nil {
+				title = *source.Title
+			}
+			t.Logf("   Source: %s - Embedded: %v (%d chunks)",
+				title, source.Embedded, source.EmbeddedChunks)
 		}
 	})
 
@@ -537,11 +541,12 @@ func testSourcesEndpointsLive(t *testing.T, httpClient interface{}) {
 	t.Run("Create text source", func(t *testing.T) {
 		testContent := "This is a test source created by live API testing."
 		sourceCreate := &models.SourceCreate{
-			Type:         models.SourceTypeText,
-			Content:      &testContent,
-			Title:        stringPtr("Live Test Text Source"),
-			Embed:        false, // Don't embed for test speed
-			DeleteSource: true,
+			Type:            models.SourceTypeText,
+			Content:         &testContent,
+			Title:           stringPtr("Live Test Text Source"),
+			Embed:           false, // Don't embed for test speed
+			DeleteSource:    true,
+			AsyncProcessing: true, // Use async processing to avoid server-side asyncio issue
 		}
 
 		// First, serialize to JSON to debug
@@ -549,7 +554,7 @@ func testSourcesEndpointsLive(t *testing.T, httpClient interface{}) {
 	require.NoError(t, jsonErr)
 	t.Logf("Sending JSON: %s", string(jsonData))
 
-	resp, err := client.Post(ctx, "/sources", sourceCreate)
+	resp, err := client.Post(ctx, "/sources/json", sourceCreate)
 		require.NoError(t, err)
 
 		// Check status - some APIs might return different status codes for validation

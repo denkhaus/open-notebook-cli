@@ -6,16 +6,17 @@ import (
 	"io"
 
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/samber/do/v2"
 )
 
 type podcastService struct {
-	repo PodcastRepository
+	repo shared.PodcastRepository
 }
 
 // NewPodcastService creates a new podcast service
-func NewPodcastService(injector do.Injector) (PodcastService, error) {
-	repo := do.MustInvoke[PodcastRepository](injector)
+func NewPodcastService(injector do.Injector) (shared.PodcastService, error) {
+	repo := do.MustInvoke[shared.PodcastRepository](injector)
 
 	return &podcastService{
 		repo: repo,
@@ -24,7 +25,7 @@ func NewPodcastService(injector do.Injector) (PodcastService, error) {
 
 // Interface implementation
 
-func (s *podcastService) Repository() PodcastRepository {
+func (s *podcastService) Repository() shared.PodcastRepository {
 	return s.repo
 }
 

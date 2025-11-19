@@ -6,16 +6,17 @@ import (
 	"time"
 
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/samber/do/v2"
 )
 
 type jobService struct {
-	repo JobRepository
+	repo shared.JobRepository
 }
 
 // NewJobService creates a new job service
-func NewJobService(injector do.Injector) (JobService, error) {
-	repo := do.MustInvoke[JobRepository](injector)
+func NewJobService(injector do.Injector) (shared.JobService, error) {
+	repo := do.MustInvoke[shared.JobRepository](injector)
 
 	return &jobService{
 		repo: repo,
@@ -24,7 +25,7 @@ func NewJobService(injector do.Injector) (JobService, error) {
 
 // Interface implementation
 
-func (s *jobService) Repository() JobRepository {
+func (s *jobService) Repository() shared.JobRepository {
 	return s.repo
 }
 

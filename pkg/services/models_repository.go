@@ -8,18 +8,19 @@ import (
 	"strconv"
 
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/samber/do/v2"
 )
 
 type modelRepository struct {
-	httpClient HTTPClient
-	logger     Logger
+	httpClient shared.HTTPClient
+	logger     shared.Logger
 }
 
 // NewModelRepository creates a new model repository
-func NewModelRepository(injector do.Injector) (ModelRepository, error) {
-	httpClient := do.MustInvoke[HTTPClient](injector)
-	logger := do.MustInvoke[Logger](injector)
+func NewModelRepository(injector do.Injector) (shared.ModelRepository, error) {
+	httpClient := do.MustInvoke[shared.HTTPClient](injector)
+	logger := do.MustInvoke[shared.Logger](injector)
 
 	return &modelRepository{
 		httpClient: httpClient,

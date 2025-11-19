@@ -14,6 +14,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/denkhaus/open-notebook-cli/pkg/di"
+	"github.com/denkhaus/open-notebook-cli/pkg/mocks"
 	"github.com/denkhaus/open-notebook-cli/pkg/services"
 )
 
@@ -252,7 +253,7 @@ func testConnectionPooling(t *testing.T) {
 // testGracefulDegradation tests graceful degradation scenarios
 func testGracefulDegradation(t *testing.T) {
 	t.Run("Offline mode evaluation", func(t *testing.T) {
-		logger := services.NewMockLogger()
+		logger := mocks.NewMockLogger(false)
 		degradation := services.NewGracefulDegradation(logger)
 
 		// Test connection refused -> offline mode
@@ -267,7 +268,7 @@ func testGracefulDegradation(t *testing.T) {
 	})
 
 	t.Run("Limited mode evaluation", func(t *testing.T) {
-		logger := services.NewMockLogger()
+		logger := mocks.NewMockLogger(false)
 		degradation := services.NewGracefulDegradation(logger)
 
 		// Test timeout -> limited mode
@@ -282,7 +283,7 @@ func testGracefulDegradation(t *testing.T) {
 	})
 
 	t.Run("Cached mode evaluation", func(t *testing.T) {
-		logger := services.NewMockLogger()
+		logger := mocks.NewMockLogger(false)
 		degradation := services.NewGracefulDegradation(logger)
 
 		// Test connection reset -> cached mode
@@ -307,7 +308,7 @@ func testNetworkDiagnostics(t *testing.T) {
 		}))
 		defer server.Close()
 
-		logger := services.NewMockLogger()
+		logger := mocks.NewMockLogger(false)
 		diagnostics := services.NewNetworkDiagnostics(logger)
 
 		// Run diagnostics
@@ -333,7 +334,7 @@ func testNetworkDiagnostics(t *testing.T) {
 	})
 
 	t.Run("Diagnostics with unreachable server", func(t *testing.T) {
-		logger := services.NewMockLogger()
+		logger := mocks.NewMockLogger(false)
 		diagnostics := services.NewNetworkDiagnostics(logger)
 
 		// Test with unreachable server
@@ -354,13 +355,13 @@ func testNetworkDiagnostics(t *testing.T) {
 
 // testErrorClassification tests error classification accuracy
 func testErrorClassification(t *testing.T) {
-	logger := services.NewMockLogger()
+	logger := mocks.NewMockLogger(false)
 	classifier := services.NewNetworkErrorClassifier(logger)
 
 	testCases := []struct {
-		name     string
-		error    error
-		expected services.ErrorType
+		name      string
+		error     error
+		expected  services.ErrorType
 		retryable bool
 	}{
 		{

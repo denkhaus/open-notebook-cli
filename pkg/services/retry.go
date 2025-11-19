@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 )
 
 // RetryConfig holds retry configuration for network operations
@@ -55,11 +56,11 @@ func DefaultRetryConfig() RetryConfig {
 
 // NetworkErrorClassifier helps classify different types of network errors
 type NetworkErrorClassifier struct {
-	logger Logger
+	logger shared.Logger
 }
 
 // NewNetworkErrorClassifier creates a new error classifier
-func NewNetworkErrorClassifier(logger Logger) *NetworkErrorClassifier {
+func NewNetworkErrorClassifier(logger shared.Logger) *NetworkErrorClassifier {
 	return &NetworkErrorClassifier{logger: logger}
 }
 
@@ -135,7 +136,7 @@ func (nec *NetworkErrorClassifier) IsRetryable(err error, config RetryConfig) bo
 	// Check if error type is generally retryable
 	switch errorType {
 	case ErrorTypeConnectionRefused, ErrorTypeTimeout, ErrorTypeNetworkUnreachable,
-		 ErrorTypeConnectionReset, ErrorTypeTemporaryFailure:
+		ErrorTypeConnectionReset, ErrorTypeTemporaryFailure:
 		return true
 	case ErrorTypeDNSResolution:
 		// DNS errors are generally not retryable unless they're temporary
@@ -265,27 +266,27 @@ func DefaultConnectionPoolConfig() ConnectionPoolConfig {
 
 // HTTPClientConfig holds complete HTTP client configuration
 type HTTPClientConfig struct {
-	Timeout             time.Duration            `json:"timeout"`
-	RetryConfig         RetryConfig              `json:"retry_config"`
-	ConnectionPoolConfig ConnectionPoolConfig     `json:"connection_pool_config"`
+	Timeout              time.Duration        `json:"timeout"`
+	RetryConfig          RetryConfig          `json:"retry_config"`
+	ConnectionPoolConfig ConnectionPoolConfig `json:"connection_pool_config"`
 }
 
 // DefaultHTTPClientConfig returns default HTTP client configuration
 func DefaultHTTPClientConfig() HTTPClientConfig {
 	return HTTPClientConfig{
-		Timeout:             30 * time.Second,
-		RetryConfig:         DefaultRetryConfig(),
+		Timeout:              30 * time.Second,
+		RetryConfig:          DefaultRetryConfig(),
 		ConnectionPoolConfig: DefaultConnectionPoolConfig(),
 	}
 }
 
 // NetworkDiagnostics provides network connectivity diagnostics
 type NetworkDiagnostics struct {
-	logger Logger
+	logger shared.Logger
 }
 
 // NewNetworkDiagnostics creates a new network diagnostics instance
-func NewNetworkDiagnostics(logger Logger) *NetworkDiagnostics {
+func NewNetworkDiagnostics(logger shared.Logger) *NetworkDiagnostics {
 	return &NetworkDiagnostics{logger: logger}
 }
 

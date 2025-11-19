@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/denkhaus/open-notebook-cli/pkg/config"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/samber/do/v2"
 )
 
@@ -16,7 +17,7 @@ type logger struct {
 }
 
 // NewLogger creates a new logger service with zap integration
-func NewLogger(injector do.Injector) (Logger, error) {
+func NewLogger(injector do.Injector) (shared.Logger, error) {
 	cfg := do.MustInvoke[config.Service](injector)
 
 	// Configure zap based on verbosity
@@ -71,14 +72,14 @@ func (l *logger) Sync() error {
 	return l.zap.Sync()
 }
 
-func (l *logger) With(fields ...interface{}) Logger {
+func (l *logger) With(fields ...interface{}) shared.Logger {
 	sugar := l.zap.Sugar().With(fields...)
 	return &logger{
 		zap: sugar.Desugar(),
 	}
 }
 
-func (l *logger) WithContext(ctx context.Context) Logger {
+func (l *logger) WithContext(ctx context.Context) shared.Logger {
 	// Extract common fields from context like request ID, user ID, etc.
 	var fields []interface{}
 

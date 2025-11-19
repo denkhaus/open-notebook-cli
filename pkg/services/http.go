@@ -12,23 +12,24 @@ import (
 	"strings"
 	"time"
 
-	"github.com/samber/do/v2"
 	"github.com/denkhaus/open-notebook-cli/pkg/config"
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
+	"github.com/samber/do/v2"
 )
 
 // Private HTTP client implementation
 type httpService struct {
 	config     config.Service
-	logger     Logger
+	logger     shared.Logger
 	httpClient *http.Client
 	authToken  string
 }
 
 // NewHTTPClient creates a new HTTP client service
-func NewHTTPClient(injector do.Injector) (HTTPClient, error) {
+func NewHTTPClient(injector do.Injector) (shared.HTTPClient, error) {
 	cfg := do.MustInvoke[config.Service](injector)
-	logger := do.MustInvoke[Logger](injector)
+	logger := do.MustInvoke[shared.Logger](injector)
 
 	// Create HTTP client with configuration
 	httpClient := &http.Client{
@@ -123,7 +124,7 @@ func (h *httpService) SetAuth(token string) {
 	h.authToken = token
 }
 
-func (h *httpService) WithTimeout(timeout time.Duration) HTTPClient {
+func (h *httpService) WithTimeout(timeout time.Duration) shared.HTTPClient {
 	newClient := *h.httpClient // Copy the HTTP client
 	newClient.Timeout = timeout
 
@@ -239,6 +240,11 @@ func (h *httpService) setHeaders(req *http.Request, isMultipart bool) {
 
 	// Set common headers
 	req.Header.Set("Accept", "application/json")
+	
+	// Set Content-Type for non-multipart requests
+	if !isMultipart && req.Method != "GET" && req.Method != "DELETE" {
+		req.Header.Set("Content-Type", "application/json")
+	}
 }
 
 func (h *httpService) marshalBody(body interface{}) (io.Reader, error) {
@@ -284,7 +290,6 @@ func (h *httpService) createMultipartBody(fields map[string]string, files map[st
 	return &buf, contentType, nil
 }
 
-
 // SSE Scanner for Server-Sent Events
 type sseScanner struct {
 	scanner *bufio.Scanner
@@ -319,4 +324,3 @@ func (s *sseScanner) Bytes() []byte {
 func (s *sseScanner) Err() error {
 	return s.scanner.Err()
 }
-

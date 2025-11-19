@@ -1,4 +1,4 @@
-package services
+package shared
 
 import (
 	"context"
@@ -45,7 +45,6 @@ type HTTPClient interface {
 }
 
 // Repository interfaces for domain operations
-
 
 // NotebookRepository interface for notebook data operations
 type NotebookRepository interface {

@@ -10,18 +10,19 @@ import (
 	"strconv"
 
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/samber/do/v2"
 )
 
 type podcastRepository struct {
-	httpClient HTTPClient
-	logger     Logger
+	httpClient shared.HTTPClient
+	logger     shared.Logger
 }
 
 // NewPodcastRepository creates a new podcast repository
-func NewPodcastRepository(injector do.Injector) (PodcastRepository, error) {
-	httpClient := do.MustInvoke[HTTPClient](injector)
-	logger := do.MustInvoke[Logger](injector)
+func NewPodcastRepository(injector do.Injector) (shared.PodcastRepository, error) {
+	httpClient := do.MustInvoke[shared.HTTPClient](injector)
+	logger := do.MustInvoke[shared.Logger](injector)
 
 	return &podcastRepository{
 		httpClient: httpClient,
@@ -149,4 +150,3 @@ func (p *podcastRepository) ListEpisodesWithLanguage(ctx context.Context, langua
 	p.logger.Info("Retrieved podcast episodes by language", "language", language, "count", len(result.Episodes))
 	return &result, nil
 }
-

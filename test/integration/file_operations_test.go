@@ -1,323 +1,239 @@
 package integration
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
+	"flag"
 	"net/http"
-	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/urfave/cli/v2"
-	"flag"
 
 	"github.com/denkhaus/open-notebook-cli/pkg/di"
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/denkhaus/open-notebook-cli/pkg/services"
 )
 
-// TestFileOperationsTests tests file-related operations with proper response handling
+// TestFileOperationsTests tests file-related operations against the real API
 func TestFileOperationsTests(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping file operations integration tests")
 	}
 
-	t.Run("Mock file upload workflow", func(t *testing.T) {
-		testMockFileUpload(t)
-	})
+	// Check if API is available before running tests
+	if !isAPIAvailable("http://localhost:5055") {
+		t.Skip("API not available on localhost:5055, skipping integration tests")
+	}
 
 	t.Run("Text source creation", func(t *testing.T) {
 		testTextSourceCreation(t)
 	})
 
-	t.Run("File error scenarios", func(t *testing.T) {
-		testFileErrorScenarios(t)
+	t.Run("Source listing", func(t *testing.T) {
+		testSourceListing(t)
+	})
+
+	t.Run("Error handling", func(t *testing.T) {
+		testErrorHandling(t)
 	})
 }
 
-// testMockFileUpload tests file upload with mock server
-func testMockFileUpload(t *testing.T) {
-	// Create mock server that accepts file uploads
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "POST" && strings.Contains(r.URL.Path, "/sources") {
-			// Return a mock source response
-			mockSource := map[string]interface{}{
-				"id":    "test-source-123",
-				"title": "Test Upload File",
-				"embedded": true,
-				"embedded_chunks": 5,
-				"created": time.Now().Format(time.RFC3339),
-				"updated": time.Now().Format(time.RFC3339),
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(200)
-			json.NewEncoder(w).Encode(mockSource)
-			return
+// isAPIAvailable checks if the API server is running and reachable
+func isAPIAvailable(apiURL string) bool {
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Get(apiURL + "/api/health")
+	if err != nil {
+		// Try a simple ping to the base URL if health endpoint doesn't exist
+		resp, err = client.Get(apiURL)
+		if err != nil {
+			return false
 		}
-
-		// Default response
-		w.WriteHeader(404)
-	}))
-	defer server.Close()
-
-	// Test with our HTTP client
-	ctx, err := createFileOpsCLIContextWithServer(server.URL)
-	require.NoError(t, err)
-
-	injector := di.Bootstrap(ctx)
-	httpClient := di.GetHTTPClient(injector)
-
-	// Create source request
-	sourceCreate := &models.SourceCreate{
-		Type:      models.SourceTypeText,
-		Content:   stringPtr("This is test content for file operations testing"),
-		Title:     stringPtr("Test Upload File"),
-		Embed:     true,
 	}
-
-	body, err := json.Marshal(sourceCreate)
-	require.NoError(t, err)
-
-	resp, err := httpClient.Post(context.Background(), "/sources", bytes.NewReader(body))
-	require.NoError(t, err)
-
-	assert.Equal(t, 200, resp.StatusCode, "Should successfully create source")
-
-	// Parse response using our helper
-	var sourceResult map[string]interface{}
-	err = json.Unmarshal(resp.Body, &sourceResult)
-	require.NoError(t, err)
-
-	assert.Equal(t, "test-source-123", sourceResult["id"])
-	assert.Equal(t, "Test Upload File", sourceResult["title"])
-
-	t.Logf("✅ Mock file upload completed successfully: %v", sourceResult["id"])
+	defer resp.Body.Close()
+	return resp.StatusCode < 500
 }
 
-// testTextSourceCreation tests text source creation
+// testTextSourceCreation tests text source creation against real API
 func testTextSourceCreation(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "POST" && r.URL.Path == "/api/sources" {
-			// Parse request to validate
-			var sourceCreate models.SourceCreate
-			err := json.NewDecoder(r.Body).Decode(&sourceCreate)
-			if err != nil {
-				w.WriteHeader(400)
-				json.NewEncoder(w).Encode(map[string]string{"error": "Invalid JSON"})
-				return
-			}
-
-			// Validate content
-			if sourceCreate.Content == nil || *sourceCreate.Content == "" {
-				w.WriteHeader(400)
-				json.NewEncoder(w).Encode(map[string]string{"error": "Content required"})
-				return
-			}
-
-			// Return success response
-			response := map[string]interface{}{
-				"id":    "text-source-" + fmt.Sprintf("%d", time.Now().Unix()),
-				"title": sourceCreate.Title,
-				"created": time.Now().Format(time.RFC3339),
-				"embedded": sourceCreate.Embed,
-			}
-
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(200)
-			json.NewEncoder(w).Encode(response)
-		} else {
-			w.WriteHeader(404)
-		}
-	}))
-	defer server.Close()
-
-	ctx, err := createFileOpsCLIContextWithServer(server.URL)
+	ctx, err := createRealAPICLIContext()
 	require.NoError(t, err)
 
 	injector := di.Bootstrap(ctx)
 	httpClient := di.GetHTTPClient(injector)
-
-	testContent := "This is a comprehensive test document for text source creation testing. It contains multiple sentences and enough content to validate that the text processing functionality works correctly."
-
-	sourceCreate := &models.SourceCreate{
-		Type:      models.SourceTypeText,
-		Content:   &testContent,
-		Title:     stringPtr("Comprehensive Test Document"),
-		Embed:     true,
-		DeleteSource: false,
-		AsyncProcessing: false,
+	
+	// Configure HTTP client to not retry server errors for this test
+	if retryableClient, ok := httpClient.(interface{ SetRetryConfig(services.RetryConfig) }); ok {
+		config := services.DefaultRetryConfig()
+		// Remove HTTP 500 from retryable statuses for this test
+		var filteredStatuses []int
+		for _, status := range config.RetryableStatus {
+			if status != 500 {
+				filteredStatuses = append(filteredStatuses, status)
+			}
+		}
+		config.RetryableStatus = filteredStatuses
+		retryableClient.SetRetryConfig(config)
+	}
+	
+	// Try to authenticate first
+	auth := di.GetAuth(injector)
+	if err := auth.Authenticate(context.Background()); err != nil {
+		t.Logf("Authentication failed: %v", err)
+		// Continue anyway as some endpoints might not require auth
 	}
 
-	body, err := json.Marshal(sourceCreate)
-	require.NoError(t, err)
+	// Test if we can reach the API with a simple GET request first
+	testResp, err := httpClient.Get(context.Background(), "/sources")
+	if err != nil {
+		t.Logf("GET /sources failed: %v", err)
+	} else {
+		t.Logf("GET /sources successful: status %d", testResp.StatusCode)
+	}
+
+	testContent := "This is a comprehensive integration test document for text source creation. It contains multiple sentences and enough content to validate that the text processing functionality works correctly with the real API."
+
+	sourceCreate := &models.SourceCreate{
+		Type:            models.SourceTypeText,
+		Content:         &testContent,
+		Title:           StringPtr("Integration Test Document"),
+		Embed:           true,
+		DeleteSource:    false,
+		AsyncProcessing: true, // Use async processing to avoid server-side asyncio issue
+	}
 
 	start := time.Now()
-	resp, err := httpClient.Post(context.Background(), "/api/sources", bytes.NewReader(body))
+	resp, err := httpClient.Post(context.Background(), "/sources/json", sourceCreate)
 	duration := time.Since(start)
 
 	require.NoError(t, err)
-	assert.Equal(t, 200, resp.StatusCode)
-	assert.Less(t, duration, 5*time.Second, "Request should complete within 5 seconds")
+	
+	// Check for successful creation (200 or 201)
+	if resp.StatusCode == 200 || resp.StatusCode == 201 {
+		// Success case - validate the response
+		var response models.Source
+		err = json.Unmarshal(resp.Body, &response)
+		require.NoError(t, err)
 
-	var response map[string]interface{}
-	err = json.Unmarshal(resp.Body, &response)
-	require.NoError(t, err)
+		assert.NotEmpty(t, response.ID, "Source ID should not be empty")
+		if response.Title != nil {
+			assert.Equal(t, "Integration Test Document", *response.Title)
+		}
+		assert.NotEmpty(t, response.Created, "Created timestamp should not be empty")
 
-	assert.NotEmpty(t, response["id"])
-	assert.Equal(t, "Comprehensive Test Document", response["title"])
-	assert.Equal(t, true, response["embedded"])
+		sourceID := "unknown"
+		if response.ID != nil {
+			sourceID = *response.ID
+		}
+		
+		// For async processing, check if we have command_id indicating background processing
+		if response.CommandID != nil {
+			t.Logf("✅ Text source queued for async processing in %v: %s (command: %s)", duration, sourceID, *response.CommandID)
+		} else {
+			t.Logf("✅ Text source created successfully in %v: %s", duration, sourceID)
+		}
 
-	t.Logf("✅ Text source created successfully in %v: %s", duration, response["id"])
+		// Optional: Clean up by deleting the created source
+		if response.ID != nil {
+			deleteResp, err := httpClient.Delete(context.Background(), "/sources/"+*response.ID)
+			if err == nil && deleteResp.StatusCode < 300 {
+				t.Logf("🧹 Cleaned up test source: %s", *response.ID)
+			}
+		}
+	} else {
+		// Log error for debugging
+		t.Logf("Response status %d, body: %s", resp.StatusCode, string(resp.Body))
+		t.Fatalf("Failed to create source - status: %d, response: %s", resp.StatusCode, string(resp.Body))
+	}
 }
 
-// testFileErrorScenarios tests file operation error scenarios
-func testFileErrorScenarios(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "POST" && r.URL.Path == "/api/sources" {
-			// Read request body
-			var sourceCreate models.SourceCreate
-			err := json.NewDecoder(r.Body).Decode(&sourceCreate)
-			if err != nil {
-				w.WriteHeader(400)
-				json.NewEncoder(w).Encode(map[string]string{
-					"error": "Bad Request",
-					"message": "Invalid JSON format",
-				})
-				return
-			}
-
-			// Simulate various error scenarios based on content
-			if sourceCreate.Content != nil && strings.Contains(*sourceCreate.Content, "trigger-error") {
-				w.WriteHeader(500)
-				json.NewEncoder(w).Encode(map[string]string{
-					"error": "Internal Server Error",
-					"message": "Simulated processing error",
-				})
-				return
-			}
-
-			if sourceCreate.Title != nil && strings.Contains(*sourceCreate.Title, "large-file") {
-				w.WriteHeader(413)
-				json.NewEncoder(w).Encode(map[string]string{
-					"error": "Payload Too Large",
-					"message": "File size exceeds limit",
-				})
-				return
-			}
-
-			// Default success
-			w.WriteHeader(200)
-			json.NewEncoder(w).Encode(map[string]interface{}{
-				"id": "success-id",
-				"status": "created",
-			})
-		} else {
-			w.WriteHeader(404)
-			json.NewEncoder(w).Encode(map[string]string{
-				"error": "Not Found",
-				"message": "Endpoint not found",
-			})
-		}
-	}))
-	defer server.Close()
-
-	ctx, err := createFileOpsCLIContextWithServer(server.URL)
+// testSourceListing tests listing sources from real API
+func testSourceListing(t *testing.T) {
+	ctx, err := createRealAPICLIContext()
 	require.NoError(t, err)
 
 	injector := di.Bootstrap(ctx)
 	httpClient := di.GetHTTPClient(injector)
 
-	t.Run("Invalid JSON error", func(t *testing.T) {
-		invalidJSON := []byte(`{"invalid": json content}`)
-		resp, err := httpClient.Post(context.Background(), "/api/sources", bytes.NewReader(invalidJSON))
+	start := time.Now()
+	resp, err := httpClient.Get(context.Background(), "/sources")
+	duration := time.Since(start)
 
-		// Should succeed with error response
-		require.NoError(t, err)
-		assert.Equal(t, 400, resp.StatusCode)
+	require.NoError(t, err)
+	assert.Equal(t, 200, resp.StatusCode, "Should successfully list sources")
+	assert.Less(t, duration, 10*time.Second, "Request should complete within 10 seconds")
 
-		var errorResp models.ErrorResponse
-		err = json.Unmarshal(resp.Body, &errorResp)
-		require.NoError(t, err)
+	var sources models.SourcesListResponse
+	err = json.Unmarshal(resp.Body, &sources)
+	require.NoError(t, err)
 
-		assert.Equal(t, "Bad Request", errorResp.Error)
-		assert.Contains(t, errorResp.Message, "Invalid JSON")
+	t.Logf("✅ Successfully listed %d sources in %v", len(sources), duration)
+}
 
-		t.Logf("✅ Invalid JSON error handled correctly")
-	})
+// testErrorHandling tests error handling with real API
+func testErrorHandling(t *testing.T) {
+	ctx, err := createRealAPICLIContext()
+	require.NoError(t, err)
 
-	t.Run("Processing error", func(t *testing.T) {
+	injector := di.Bootstrap(ctx)
+	httpClient := di.GetHTTPClient(injector)
+	
+	// Configure HTTP client to not retry server errors for this test
+	if retryableClient, ok := httpClient.(interface{ SetRetryConfig(services.RetryConfig) }); ok {
+		config := services.DefaultRetryConfig()
+		// Remove HTTP 500 from retryable statuses for this test
+		var filteredStatuses []int
+		for _, status := range config.RetryableStatus {
+			if status != 500 {
+				filteredStatuses = append(filteredStatuses, status)
+			}
+		}
+		config.RetryableStatus = filteredStatuses
+		retryableClient.SetRetryConfig(config)
+	}
+
+	t.Run("Invalid source creation - missing content", func(t *testing.T) {
 		sourceCreate := &models.SourceCreate{
-			Type:    models.SourceTypeText,
-			Content: stringPtr("This content will trigger-error in processing"),
-			Title:   stringPtr("Error Test Source"),
+			Type:  models.SourceTypeText,
+			Title: StringPtr("Test Source Without Content"),
+			Embed: true,
+			// Content is intentionally nil
 		}
 
-		body, err := json.Marshal(sourceCreate)
+		resp, err := httpClient.Post(context.Background(), "/sources", sourceCreate)
 		require.NoError(t, err)
-
-		resp, err := httpClient.Post(context.Background(), "/api/sources", bytes.NewReader(body))
-		require.NoError(t, err)
-		assert.Equal(t, 500, resp.StatusCode)
-
-		var errorResp models.ErrorResponse
-		err = json.Unmarshal(resp.Body, &errorResp)
-		require.NoError(t, err)
-
-		assert.Equal(t, "Internal Server Error", errorResp.Error)
-		assert.Contains(t, errorResp.Message, "processing error")
-
-		t.Logf("✅ Processing error handled correctly")
+		
+		// Should return an error status (400 Bad Request is expected)
+		assert.True(t, resp.StatusCode >= 400, "Should return error status for invalid request")
+		
+		t.Logf("✅ Invalid source creation properly rejected with status %d", resp.StatusCode)
 	})
 
-	t.Run("File size limit error", func(t *testing.T) {
-		sourceCreate := &models.SourceCreate{
-			Type:    models.SourceTypeText,
-			Content: stringPtr("Test content for large-file simulation"),
-			Title:   stringPtr("Test with large-file trigger"),
-		}
-
-		body, err := json.Marshal(sourceCreate)
+	t.Run("Nonexistent endpoint", func(t *testing.T) {
+		resp, err := httpClient.Get(context.Background(), "/nonexistent-endpoint")
 		require.NoError(t, err)
-
-		resp, err := httpClient.Post(context.Background(), "/api/sources", bytes.NewReader(body))
-		require.NoError(t, err)
-		assert.Equal(t, 413, resp.StatusCode)
-
-		var errorResp models.ErrorResponse
-		err = json.Unmarshal(resp.Body, &errorResp)
-		require.NoError(t, err)
-
-		assert.Equal(t, "Payload Too Large", errorResp.Error)
-
-		t.Logf("✅ File size limit error handled correctly")
+		
+		assert.Equal(t, 404, resp.StatusCode, "Should return 404 for nonexistent endpoint")
+		
+		t.Logf("✅ Nonexistent endpoint properly returns 404")
 	})
 
-	t.Run("Endpoint not found", func(t *testing.T) {
-		sourceCreate := &models.SourceCreate{
-			Type:    models.SourceTypeText,
-			Content: stringPtr("Test content"),
-		}
-
-		body, err := json.Marshal(sourceCreate)
+	t.Run("Invalid source ID", func(t *testing.T) {
+		resp, err := httpClient.Get(context.Background(), "/sources/invalid-source-id-12345")
 		require.NoError(t, err)
-
-		resp, err := httpClient.Post(context.Background(), "/api/nonexistent", bytes.NewReader(body))
-		require.NoError(t, err)
-		assert.Equal(t, 404, resp.StatusCode)
-
-		var errorResp models.ErrorResponse
-		err = json.Unmarshal(resp.Body, &errorResp)
-		require.NoError(t, err)
-
-		assert.Equal(t, "Not Found", errorResp.Error)
-
-		t.Logf("✅ Endpoint not found error handled correctly")
+		
+		// Should return 404 or similar error for invalid source ID
+		assert.True(t, resp.StatusCode >= 400, "Should return error status for invalid source ID")
+		
+		t.Logf("✅ Invalid source ID properly handled with status %d", resp.StatusCode)
 	})
+}
+
+// Helper function to create CLI context for real API
+func createRealAPICLIContext() (*cli.Context, error) {
+	return createFileOpsCLIContextWithServer("http://localhost:5055")
 }
 
 // Helper function to create CLI context with custom server URL

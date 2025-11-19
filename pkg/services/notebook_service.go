@@ -4,18 +4,19 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/samber/do/v2"
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
+	"github.com/samber/do/v2"
 )
 
 // Private notebook service implementation
 type notebookService struct {
-	repo NotebookRepository
+	repo shared.NotebookRepository
 }
 
 // NewNotebookService creates a new notebook service
-func NewNotebookService(injector do.Injector) (NotebookService, error) {
-	repo := do.MustInvoke[NotebookRepository](injector)
+func NewNotebookService(injector do.Injector) (shared.NotebookService, error) {
+	repo := do.MustInvoke[shared.NotebookRepository](injector)
 
 	return &notebookService{
 		repo: repo,
@@ -24,7 +25,7 @@ func NewNotebookService(injector do.Injector) (NotebookService, error) {
 
 // Interface implementation
 
-func (s *notebookService) Repository() NotebookRepository {
+func (s *notebookService) Repository() shared.NotebookRepository {
 	return s.repo
 }
 

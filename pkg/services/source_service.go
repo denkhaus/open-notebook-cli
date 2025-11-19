@@ -6,16 +6,17 @@ import (
 	"io"
 
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/samber/do/v2"
 )
 
 type sourceService struct {
-	repo SourceRepository
+	repo shared.SourceRepository
 }
 
 // NewSourceService creates a new source service
-func NewSourceService(injector do.Injector) (SourceService, error) {
-	repo := do.MustInvoke[SourceRepository](injector)
+func NewSourceService(injector do.Injector) (shared.SourceService, error) {
+	repo := do.MustInvoke[shared.SourceRepository](injector)
 
 	return &sourceService{
 		repo: repo,
@@ -24,7 +25,7 @@ func NewSourceService(injector do.Injector) (SourceService, error) {
 
 // Interface implementation
 
-func (s *sourceService) Repository() SourceRepository {
+func (s *sourceService) Repository() shared.SourceRepository {
 	return s.repo
 }
 

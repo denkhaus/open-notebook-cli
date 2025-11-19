@@ -10,7 +10,7 @@ import (
 	"github.com/denkhaus/open-notebook-cli/pkg/config"
 	"github.com/denkhaus/open-notebook-cli/pkg/errors"
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
-	"github.com/denkhaus/open-notebook-cli/pkg/services"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/denkhaus/open-notebook-cli/pkg/utils"
 	"github.com/samber/do/v2"
 	"github.com/urfave/cli/v2"
@@ -18,9 +18,9 @@ import (
 
 // SourcesServices holds all the services needed for source commands
 type SourcesServices struct {
-	SourceService services.SourceService
+	SourceService shared.SourceService
 	Config        config.Service
-	Logger        services.Logger
+	Logger        shared.Logger
 }
 
 // getSourcesServices retrieves all required services via dependency injection
@@ -32,9 +32,9 @@ func getSourcesServices(ctx *cli.Context) (*SourcesServices, error) {
 	}
 
 	return &SourcesServices{
-		SourceService: do.MustInvoke[services.SourceService](injector),
+		SourceService: do.MustInvoke[shared.SourceService](injector),
 		Config:        do.MustInvoke[config.Service](injector),
-		Logger:        do.MustInvoke[services.Logger](injector),
+		Logger:        do.MustInvoke[shared.Logger](injector),
 	}, nil
 }
 
@@ -42,10 +42,10 @@ func getSourcesServices(ctx *cli.Context) (*SourcesServices, error) {
 func validateSourceArgs(ctx *cli.Context, requireSourceID bool) (string, error) {
 	if requireSourceID {
 		if ctx.NArg() < 1 {
-			return "", fmt.Errorf("❌ Error: Missing source ID")
+			return "", errors.MissingArgument("source ID", ctx.Command.Name)
 		}
 		if ctx.NArg() > 1 {
-			return "", fmt.Errorf("❌ Error: Too many arguments. Expected only source ID")
+			return "", errors.TooManyArguments("source ID", ctx.Command.Name)
 		}
 	}
 
@@ -317,7 +317,7 @@ func handleFileUpload(ctx *cli.Context, services *SourcesServices, title, filePa
 // handleSourcesUpdate handles source updates
 func handleSourcesUpdate(ctx *cli.Context) error {
 	if !ctx.IsSet("title") && !ctx.IsSet("topic") {
-		return fmt.Errorf("❌ Error: You must specify at least one field to update (--title or --topic)")
+		return errors.AtLeastOneField([]string{"title", "topic"}, ctx.Command.Name)
 	}
 
 	sourceID, err := validateSourceArgs(ctx, true)

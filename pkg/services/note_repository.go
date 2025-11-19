@@ -8,18 +8,19 @@ import (
 	"strconv"
 
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/samber/do/v2"
 )
 
 type noteRepository struct {
-	httpClient HTTPClient
-	logger     Logger
+	httpClient shared.HTTPClient
+	logger     shared.Logger
 }
 
 // NewNoteRepository creates a new note repository
-func NewNoteRepository(injector do.Injector) (NoteRepository, error) {
-	httpClient := do.MustInvoke[HTTPClient](injector)
-	logger := do.MustInvoke[Logger](injector)
+func NewNoteRepository(injector do.Injector) (shared.NoteRepository, error) {
+	httpClient := do.MustInvoke[shared.HTTPClient](injector)
+	logger := do.MustInvoke[shared.Logger](injector)
 
 	return &noteRepository{
 		httpClient: httpClient,

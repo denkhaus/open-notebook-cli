@@ -6,19 +6,21 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/denkhaus/open-notebook-cli/pkg/errors"
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/samber/do/v2"
 )
 
 type jobRepository struct {
-	httpClient HTTPClient
-	logger     Logger
+	httpClient shared.HTTPClient
+	logger     shared.Logger
 }
 
 // NewJobRepository creates a new job repository
-func NewJobRepository(injector do.Injector) (JobRepository, error) {
-	httpClient := do.MustInvoke[HTTPClient](injector)
-	logger := do.MustInvoke[Logger](injector)
+func NewJobRepository(injector do.Injector) (shared.JobRepository, error) {
+	httpClient := do.MustInvoke[shared.HTTPClient](injector)
+	logger := do.MustInvoke[shared.Logger](injector)
 
 	return &jobRepository{
 		httpClient: httpClient,
@@ -31,12 +33,12 @@ func (j *jobRepository) List(ctx context.Context) (*models.JobsListResponse, err
 	endpoint := "/commands/jobs"
 	resp, err := j.httpClient.Get(ctx, endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list jobs: %w", err)
+		return nil, errors.FailedToList("jobs", err)
 	}
 
 	var result models.JobsListResponse
 	if err := json.Unmarshal(resp.Body, &result); err != nil {
-		return nil, fmt.Errorf("failed to parse jobs response: %w", err)
+		return nil, errors.FailedToDecode("jobs response", err)
 	}
 
 	j.logger.Info("Retrieved jobs", "count", len(result.Jobs))
@@ -48,12 +50,12 @@ func (j *jobRepository) GetStatus(ctx context.Context, jobID string) (*models.Jo
 	endpoint := fmt.Sprintf("/commands/jobs/%s", jobID)
 	resp, err := j.httpClient.Get(ctx, endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get job status: %w", err)
+		return nil, errors.FailedToGet("job status", err)
 	}
 
 	var result models.JobStatus
 	if err := json.Unmarshal(resp.Body, &result); err != nil {
-		return nil, fmt.Errorf("failed to parse job status response: %w", err)
+		return nil, errors.FailedToDecode("job status response", err)
 	}
 
 	j.logger.Info("Retrieved job status", "job_id", jobID, "status", result.Status)
@@ -65,7 +67,7 @@ func (j *jobRepository) Cancel(ctx context.Context, jobID string) error {
 	endpoint := fmt.Sprintf("/commands/jobs/%s", jobID)
 	_, err := j.httpClient.Delete(ctx, endpoint)
 	if err != nil {
-		return fmt.Errorf("failed to cancel job %s: %w", jobID, err)
+		return errors.FailedToCancel(fmt.Sprintf("job %s", jobID), err)
 	}
 
 	j.logger.Info("Cancelled job", "job_id", jobID)

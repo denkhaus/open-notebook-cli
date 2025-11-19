@@ -8,7 +8,7 @@ import (
 	"github.com/denkhaus/open-notebook-cli/pkg/config"
 	"github.com/denkhaus/open-notebook-cli/pkg/errors"
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
-	"github.com/denkhaus/open-notebook-cli/pkg/services"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/denkhaus/open-notebook-cli/pkg/utils"
 	"github.com/samber/do/v2"
 	"github.com/urfave/cli/v2"
@@ -16,9 +16,9 @@ import (
 
 // NotesServices holds all the services needed for note commands
 type NotesServices struct {
-	NoteService services.NoteRepository
+	NoteService shared.NoteRepository
 	Config      config.Service
-	Logger      services.Logger
+	Logger      shared.Logger
 }
 
 // getNotesServices retrieves all required services via dependency injection
@@ -30,9 +30,9 @@ func getNotesServices(ctx *cli.Context) (*NotesServices, error) {
 	}
 
 	return &NotesServices{
-		NoteService: do.MustInvoke[services.NoteRepository](injector),
+		NoteService: do.MustInvoke[shared.NoteRepository](injector),
 		Config:      do.MustInvoke[config.Service](injector),
-		Logger:      do.MustInvoke[services.Logger](injector),
+		Logger:      do.MustInvoke[shared.Logger](injector),
 	}, nil
 }
 

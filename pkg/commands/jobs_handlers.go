@@ -9,7 +9,7 @@ import (
 	"github.com/denkhaus/open-notebook-cli/pkg/config"
 	"github.com/denkhaus/open-notebook-cli/pkg/errors"
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
-	"github.com/denkhaus/open-notebook-cli/pkg/services"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/denkhaus/open-notebook-cli/pkg/utils"
 	"github.com/samber/do/v2"
 	"github.com/urfave/cli/v2"
@@ -17,9 +17,9 @@ import (
 
 // JobsServices holds all the services needed for job commands
 type JobsServices struct {
-	JobService services.JobRepository
+	JobService shared.JobRepository
 	Config     config.Service
-	Logger     services.Logger
+	Logger     shared.Logger
 }
 
 // getJobsServices retrieves all required services via dependency injection
@@ -31,9 +31,9 @@ func getJobsServices(ctx *cli.Context) (*JobsServices, error) {
 	}
 
 	return &JobsServices{
-		JobService: do.MustInvoke[services.JobRepository](injector),
+		JobService: do.MustInvoke[shared.JobRepository](injector),
 		Config:     do.MustInvoke[config.Service](injector),
-		Logger:     do.MustInvoke[services.Logger](injector),
+		Logger:     do.MustInvoke[shared.Logger](injector),
 	}, nil
 }
 

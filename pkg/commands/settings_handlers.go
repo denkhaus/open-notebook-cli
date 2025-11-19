@@ -10,16 +10,16 @@ import (
 	"github.com/denkhaus/open-notebook-cli/pkg/config"
 	"github.com/denkhaus/open-notebook-cli/pkg/errors"
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
-	"github.com/denkhaus/open-notebook-cli/pkg/services"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/samber/do/v2"
 	"github.com/urfave/cli/v2"
 )
 
 // SettingsServices holds all the services needed for settings commands
 type SettingsServices struct {
-	SettingsService services.SettingsRepository
+	SettingsService shared.SettingsRepository
 	Config          config.Service
-	Logger          services.Logger
+	Logger          shared.Logger
 }
 
 // getSettingsServices retrieves all required services via dependency injection
@@ -31,9 +31,9 @@ func getSettingsServices(ctx *cli.Context) (*SettingsServices, error) {
 	}
 
 	return &SettingsServices{
-		SettingsService: do.MustInvoke[services.SettingsRepository](injector),
+		SettingsService: do.MustInvoke[shared.SettingsRepository](injector),
 		Config:          do.MustInvoke[config.Service](injector),
-		Logger:          do.MustInvoke[services.Logger](injector),
+		Logger:          do.MustInvoke[shared.Logger](injector),
 	}, nil
 }
 

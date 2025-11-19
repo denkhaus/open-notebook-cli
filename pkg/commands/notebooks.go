@@ -2,15 +2,15 @@ package commands
 
 import (
 	"github.com/denkhaus/open-notebook-cli/pkg/config"
-	"github.com/denkhaus/open-notebook-cli/pkg/services"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/urfave/cli/v2"
 )
 
 // NotebookServices holds all the services needed for notebook commands
 type NotebookServices struct {
-	NotebookService services.NotebookService
+	NotebookService shared.NotebookService
 	Config          config.Service
-	Logger          services.Logger
+	Logger          shared.Logger
 }
 
 // NotebooksCommand returns the notebooks command and its subcommands

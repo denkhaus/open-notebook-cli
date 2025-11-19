@@ -6,19 +6,20 @@ import (
 	"fmt"
 
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/samber/do/v2"
 )
 
 // Private search repository implementation
 type searchRepository struct {
-	httpClient HTTPClient
-	logger     Logger
+	httpClient shared.HTTPClient
+	logger     shared.Logger
 }
 
 // NewSearchRepository creates a new search repository
-func NewSearchRepository(injector do.Injector) (SearchRepository, error) {
-	httpClient := do.MustInvoke[HTTPClient](injector)
-	logger := do.MustInvoke[Logger](injector)
+func NewSearchRepository(injector do.Injector) (shared.SearchRepository, error) {
+	httpClient := do.MustInvoke[shared.HTTPClient](injector)
+	logger := do.MustInvoke[shared.Logger](injector)
 
 	return &searchRepository{
 		httpClient: httpClient,
@@ -122,5 +123,5 @@ func (r *searchRepository) AskSimple(ctx context.Context, req *models.AskRequest
 
 // Private search service implementation
 type searchService struct {
-	repo SearchRepository
+	repo shared.SearchRepository
 }

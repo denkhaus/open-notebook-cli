@@ -8,7 +8,7 @@ import (
 	"github.com/denkhaus/open-notebook-cli/pkg/config"
 	"github.com/denkhaus/open-notebook-cli/pkg/errors"
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
-	"github.com/denkhaus/open-notebook-cli/pkg/services"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/denkhaus/open-notebook-cli/pkg/utils"
 	"github.com/samber/do/v2"
 	"github.com/urfave/cli/v2"
@@ -16,9 +16,9 @@ import (
 
 // ChatServices holds all the services needed for chat commands
 type ChatServices struct {
-	ChatService services.ChatRepository
+	ChatService shared.ChatRepository
 	Config      config.Service
-	Logger      services.Logger
+	Logger      shared.Logger
 }
 
 // getChatServices retrieves all required services via dependency injection
@@ -30,9 +30,9 @@ func getChatServices(ctx *cli.Context) (*ChatServices, error) {
 	}
 
 	return &ChatServices{
-		ChatService: do.MustInvoke[services.ChatRepository](injector),
+		ChatService: do.MustInvoke[shared.ChatRepository](injector),
 		Config:      do.MustInvoke[config.Service](injector),
-		Logger:      do.MustInvoke[services.Logger](injector),
+		Logger:      do.MustInvoke[shared.Logger](injector),
 	}, nil
 }
 
@@ -40,10 +40,10 @@ func getChatServices(ctx *cli.Context) (*ChatServices, error) {
 func validateChatArgs(ctx *cli.Context, requireSessionID bool) (string, error) {
 	if requireSessionID {
 		if ctx.NArg() < 1 {
-			return "", fmt.Errorf("❌ Error: Missing session ID")
+			return "", errors.MissingArgument("session ID", ctx.Command.Name)
 		}
 		if ctx.NArg() > 1 {
-			return "", fmt.Errorf("❌ Error: Too many arguments. Expected only session ID")
+			return "", errors.TooManyArguments("session ID", ctx.Command.Name)
 		}
 	}
 
@@ -84,7 +84,7 @@ func handleChatSessionsList(ctx *cli.Context) error {
 
 	// API requires notebook_id parameter - fail loud if missing
 	if notebookID == "" {
-		return fmt.Errorf("❌ notebook ID is required for chat sessions")
+		return errors.RequiredField("Notebook ID", ctx.Command.Name)
 	}
 
 	response, err := services.ChatService.ListSessionsForNotebook(ctx.Context, notebookID)

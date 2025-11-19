@@ -10,6 +10,7 @@ import (
 
 	"github.com/denkhaus/open-notebook-cli/pkg/config"
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/samber/do/v2"
 )
 
@@ -22,7 +23,7 @@ type retryableHTTPService struct {
 }
 
 // NewRetryableHTTPClient creates an enhanced HTTP client with retry logic
-func NewRetryableHTTPClient(injector do.Injector) (HTTPClient, error) {
+func NewRetryableHTTPClient(injector do.Injector) (shared.HTTPClient, error) {
 	// Create the base HTTP service
 	baseService, err := NewHTTPClient(injector)
 	if err != nil {
@@ -30,7 +31,7 @@ func NewRetryableHTTPClient(injector do.Injector) (HTTPClient, error) {
 	}
 
 	cfg := do.MustInvoke[config.Service](injector)
-	logger := do.MustInvoke[Logger](injector)
+	logger := do.MustInvoke[shared.Logger](injector)
 
 	// Get configuration
 	httpConfig := DefaultHTTPClientConfig()
@@ -132,7 +133,7 @@ func (e *retryableHTTPService) DiagnoseConnectivity(ctx context.Context) map[str
 }
 
 // WithTimeout creates a new HTTP client with custom timeout
-func (e *retryableHTTPService) WithTimeout(timeout time.Duration) HTTPClient {
+func (e *retryableHTTPService) WithTimeout(timeout time.Duration) shared.HTTPClient {
 	// Create a copy of the underlying service
 	baseCopy := e.httpService.WithTimeout(timeout).(*httpService)
 
@@ -164,13 +165,13 @@ func (e *retryableHTTPService) SetRetryConfig(config RetryConfig) {
 
 // GracefulDegradation provides graceful degradation when API is unreachable
 type GracefulDegradation struct {
-	logger      Logger
+	logger      shared.Logger
 	classifier  *NetworkErrorClassifier
 	diagnostics *NetworkDiagnostics
 }
 
 // NewGracefulDegradation creates a new graceful degradation handler
-func NewGracefulDegradation(logger Logger) *GracefulDegradation {
+func NewGracefulDegradation(logger shared.Logger) *GracefulDegradation {
 	return &GracefulDegradation{
 		logger:      logger,
 		classifier:  NewNetworkErrorClassifier(logger),

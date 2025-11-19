@@ -5,19 +5,21 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/denkhaus/open-notebook-cli/pkg/errors"
 	"github.com/denkhaus/open-notebook-cli/pkg/models"
+	"github.com/denkhaus/open-notebook-cli/pkg/shared"
 	"github.com/samber/do/v2"
 )
 
 type chatRepository struct {
-	httpClient HTTPClient
-	logger     Logger
+	httpClient shared.HTTPClient
+	logger     shared.Logger
 }
 
 // NewChatRepository creates a new chat repository
-func NewChatRepository(injector do.Injector) (ChatRepository, error) {
-	httpClient := do.MustInvoke[HTTPClient](injector)
-	logger := do.MustInvoke[Logger](injector)
+func NewChatRepository(injector do.Injector) (shared.ChatRepository, error) {
+	httpClient := do.MustInvoke[shared.HTTPClient](injector)
+	logger := do.MustInvoke[shared.Logger](injector)
 
 	return &chatRepository{
 		httpClient: httpClient,
@@ -41,16 +43,17 @@ func (r *chatRepository) ListSessionsForNotebook(ctx context.Context, notebookID
 
 	resp, err := r.httpClient.Get(ctx, endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list chat sessions: %w", err)
+		return nil, errors.FailedToList("chat sessions", err)
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("API error: %d - %s", resp.StatusCode, string(resp.Body))
+		return nil, errors.APIServiceError("list", "chat sessions",
+			fmt.Errorf("API error: %d - %s", resp.StatusCode, string(resp.Body)))
 	}
 
 	var response models.ChatSessionsResponse
 	if err := json.Unmarshal(resp.Body, &response); err != nil {
-		return nil, fmt.Errorf("failed to decode sessions response: %w", err)
+		return nil, errors.FailedToDecode("sessions response", err)
 	}
 
 	r.logger.Info("Retrieved chat sessions", "count", len(response))
@@ -64,16 +67,17 @@ func (r *chatRepository) CreateSession(ctx context.Context, req *models.ChatCrea
 	endpoint := "/chat/sessions"
 	resp, err := r.httpClient.Post(ctx, endpoint, req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create chat session: %w", err)
+		return nil, errors.FailedToCreate("chat session", err)
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("API error: %d - %s", resp.StatusCode, string(resp.Body))
+		return nil, errors.APIServiceError("create", "chat session",
+			fmt.Errorf("API error: %d - %s", resp.StatusCode, string(resp.Body)))
 	}
 
 	var session models.ChatSession
 	if err := json.Unmarshal(resp.Body, &session); err != nil {
-		return nil, fmt.Errorf("failed to decode session response: %w", err)
+		return nil, errors.FailedToDecode("session response", err)
 	}
 
 	r.logger.Info("Created chat session", "session_id", session.ID)
@@ -87,16 +91,17 @@ func (r *chatRepository) GetSession(ctx context.Context, sessionID string) (*mod
 	endpoint := fmt.Sprintf("/chat/sessions/%s", sessionID)
 	resp, err := r.httpClient.Get(ctx, endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get chat session: %w", err)
+		return nil, errors.FailedToGet("chat session", err)
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("API error: %d - %s", resp.StatusCode, string(resp.Body))
+		return nil, errors.APIServiceError("get", "chat session",
+			fmt.Errorf("API error: %d - %s", resp.StatusCode, string(resp.Body)))
 	}
 
 	var session models.ChatSession
 	if err := json.Unmarshal(resp.Body, &session); err != nil {
-		return nil, fmt.Errorf("failed to decode session response: %w", err)
+		return nil, errors.FailedToDecode("session response", err)
 	}
 
 	r.logger.Info("Retrieved chat session", "session_id", session.ID)
@@ -110,11 +115,12 @@ func (r *chatRepository) DeleteSession(ctx context.Context, sessionID string) er
 	endpoint := fmt.Sprintf("/chat/sessions/%s", sessionID)
 	resp, err := r.httpClient.Delete(ctx, endpoint)
 	if err != nil {
-		return fmt.Errorf("failed to delete chat session: %w", err)
+		return errors.FailedToDelete("chat session", err)
 	}
 
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("API error: %d - %s", resp.StatusCode, string(resp.Body))
+		return errors.APIServiceError("delete", "chat session",
+			fmt.Errorf("API error: %d - %s", resp.StatusCode, string(resp.Body)))
 	}
 
 	r.logger.Info("Deleted chat session", "session_id", sessionID)
@@ -128,16 +134,17 @@ func (r *chatRepository) ExecuteChat(ctx context.Context, req *models.ChatExecut
 	endpoint := "/chat/execute"
 	resp, err := r.httpClient.Post(ctx, endpoint, req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute chat: %w", err)
+		return nil, errors.FailedToExecute("chat", err)
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("API error: %d - %s", resp.StatusCode, string(resp.Body))
+		return nil, errors.APIServiceError("execute", "chat",
+			fmt.Errorf("API error: %d - %s", resp.StatusCode, string(resp.Body)))
 	}
 
 	var response models.ChatExecuteResponse
 	if err := json.Unmarshal(resp.Body, &response); err != nil {
-		return nil, fmt.Errorf("failed to decode chat response: %w", err)
+		return nil, errors.FailedToDecode("chat response", err)
 	}
 
 	r.logger.Info("Chat executed successfully", "session_id", response.SessionID, "message_id", response.MessageID)
@@ -151,7 +158,7 @@ func (r *chatRepository) StreamChat(ctx context.Context, req *models.ChatExecute
 	endpoint := "/chat/execute"
 	chunkChan, err := r.httpClient.Stream(ctx, endpoint, req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to start chat stream: %w", err)
+		return nil, errors.FailedToStart("chat stream", err)
 	}
 
 	// Convert response chunks to model chunks
@@ -183,16 +190,17 @@ func (r *chatRepository) GetMessages(ctx context.Context, sessionID string) ([]*
 	endpoint := fmt.Sprintf("/chat/sessions/%s/messages", sessionID)
 	resp, err := r.httpClient.Get(ctx, endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get chat messages: %w", err)
+		return nil, errors.FailedToGet("chat messages", err)
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("API error: %d - %s", resp.StatusCode, string(resp.Body))
+		return nil, errors.APIServiceError("get", "chat messages",
+			fmt.Errorf("API error: %d - %s", resp.StatusCode, string(resp.Body)))
 	}
 
 	var messages []*models.ChatMessage
 	if err := json.Unmarshal(resp.Body, &messages); err != nil {
-		return nil, fmt.Errorf("failed to decode messages response: %w", err)
+		return nil, errors.FailedToDecode("messages response", err)
 	}
 
 	r.logger.Info("Retrieved chat messages", "session_id", sessionID, "count", len(messages))

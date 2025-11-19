@@ -94,6 +94,11 @@ func JoinNonEmpty(separator string, parts ...string) string {
 
 // Helper functions for Source model migration between V1 and V2
 
+// StringPtr returns a pointer to the given string
+func StringPtr(s string) *string {
+	return &s
+}
+
 // Min returns the minimum of two integers
 func Min(a, b int) int {
 	if a < b {
